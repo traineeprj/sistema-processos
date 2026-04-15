@@ -23,72 +23,77 @@
   </div>
 
   <script>
-  const supabaseClient = supabase.createClient(
-  "https://ewibndqllbxfduyzvkpl.supabase.co",
-  "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
-);
+    const supabaseClient = supabase.createClient(
+      "https://ewibndqllbxfduyzvkpl.supabase.co",
+      "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+    );
 
-  // Verifica se já está logado
-  async function verificarUsuario() {
-    const { data } = await supabaseClient.auth.getSession();
+    // Verifica login
+    async function verificarUsuario() {
+      const { data } = await supabaseClient.auth.getSession();
 
-    if (data.session) {
-      document.getElementById("login").style.display = "none";
-      document.getElementById("sistema").style.display = "block";
-      carregarProcessos();
+      if (data.session) {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("sistema").style.display = "block";
+        carregarProcessos();
+      }
     }
-  }
 
-  async function login() {
-    const email = document.getElementById("email").value;
-    const senha = document.getElementById("senha").value;
+    // Login
+    async function login() {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
 
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email: email,
-      password: senha
-    });
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: senha
+      });
 
-    if (error) {
-      document.getElementById("erro").innerText = "Login inválido";
-      return;
+      if (error) {
+        document.getElementById("erro").innerText = "Login inválido";
+        return;
+      }
+
+      verificarUsuario();
+    }
+
+    // Logout
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      location.reload();
+    }
+
+    // 🔥 Carregar dados da tabela
+    async function carregarProcessos() {
+      const { data, error } = await supabaseClient
+        .from('processos')
+        .select('*');
+
+      if (error) {
+        alert("Erro ao carregar dados");
+        return;
+      }
+
+      const lista = document.getElementById("lista");
+      lista.innerHTML = "";
+
+      data.forEach(p => {
+        const item = document.createElement("li");
+
+        item.innerText =
+          "Processo: " + (p.processo || "") +
+          " | Liminar: " + (p.liminar || "") +
+          " | SEI: " + (p.sei || "") +
+          " | Local: " + (p.local || "") +
+          " | Setor: " + (p.setor || "") +
+          " | Mês: " + (p.mes || "");
+
+        lista.appendChild(item);
+      });
     }
 
     verificarUsuario();
-  }
+  </script>
 
-  async function logout() {
-    await supabaseClient.auth.signOut();
-    location.reload();
-  }
-
-  async function carregarProcessos() {
-    const { data } = await supabaseClient
-      .from('processos')
-      .select('*');
-
-    const lista = document.getElementById("lista");
-    lista.innerHTML = "";
-
-    data.forEach(p => {
-      async function carregarProcessos() {
-  const { data } = await supabaseClient
-    .from('processos')
-    .select('*');
-
-  const lista = document.getElementById("lista");
-  lista.innerHTML = "";
-
-  data.forEach(p => {
-    const item = document.createElement("li");
-
-    item.innerText =
-      "Processo: " + p.processo +
-      " | Liminar: " + p.liminar +
-      " | SEI: " + p.sei +
-      " | Local: " + p.local +
-      " | Setor: " + p.setor +
-      " | Mês: " + p.mes;
-
-    lista.appendChild(item);
-  });
-}
+</body>
+</html>
