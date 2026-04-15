@@ -80,13 +80,13 @@
       data.forEach(p => {
         const item = document.createElement("li");
 
-        item.innerText =
-          "Processo: " + (p.processo || "") +
-          " | Liminar: " + (p.liminar || "") +
-          " | SEI: " + (p.sei || "") +
-          " | Local: " + (p.local || "") +
-          " | Setor: " + (p.setor || "") +
-          " | Mês: " + (p.mes || "");
+       item.innerText =
+  "Processo: " + (p.PROCESSO || "") +
+  " | Liminar: " + (p.LIMINAR || "") +
+  " | SEI: " + (p.SEI || "") +
+  " | Local: " + (p.LOCAL || "") +
+  " | Setor: " + (p.SETOR || "") +
+  " | Mês: " + (p.MES || "");
 
         lista.appendChild(item);
       });
