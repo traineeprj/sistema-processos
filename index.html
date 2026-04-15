@@ -19,7 +19,19 @@
   <div id="sistema" style="display:none;">
     <button onclick="logout()">Sair</button>
     <h2>📋 Processos</h2>
-    <ul id="lista"></ul>
+    <table border="1" id="tabela">
+  <thead>
+    <tr>
+      <th>Processo</th>
+      <th>Liminar</th>
+      <th>SEI</th>
+      <th>Local</th>
+      <th>Setor</th>
+      <th>Mês</th>
+    </tr>
+  </thead>
+  <tbody id="lista"></tbody>
+</table>
   </div>
 
   <script>
