@@ -17,6 +17,7 @@
   </div>
 
   <div id="sistema" style="display:none;">
+    <button onclick="logout()">Sair</button>
     <h2>📋 Processos</h2>
     <ul id="lista"></ul>
   </div>
@@ -60,6 +61,10 @@
         item.innerText = 
           p.numero + " | " + p.liminar + " | " + p.local;
         lista.appendChild(item);
+        async function logout() {
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
       });
     }
   </script>
