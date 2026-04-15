@@ -1,23 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Sistema de Processos</title>
+  <title>Sistema de Processos PRO</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
       font-family: Arial;
       margin: 20px;
+      background: #f4f6f8;
     }
 
     h1 {
-      color: #333;
+      color: #2c3e50;
+    }
+
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cards {
+      display: flex;
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      flex: 1;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: center;
     }
 
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 15px;
+      background: white;
     }
 
     th {
@@ -27,8 +51,7 @@
 
     td, th {
       padding: 8px;
-      border: 1px solid #ccc;
-      text-align: left;
+      border: 1px solid #ddd;
     }
 
     tr:nth-child(even) {
@@ -40,164 +63,244 @@
       margin: 5px;
     }
 
-    button {
-      padding: 8px 12px;
-      cursor: pointer;
+    canvas {
+      margin-top: 20px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
     }
   </style>
 </head>
 
 <body>
 
+<div class="topo">
   <h1>📊 Sistema de Processos</h1>
+  <button onclick="logout()">Sair</button>
+</div>
 
-  <!-- LOGIN -->
-  <div id="login">
-    <h2>🔐 Login</h2>
-    <input type="email" id="email" placeholder="Email"><br>
-    <input type="password" id="senha" placeholder="Senha"><br>
-    <button onclick="login()">Entrar</button>
-    <p id="erro" style="color:red;"></p>
+<!-- LOGIN -->
+<div id="login">
+  <h2>🔐 Login</h2>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="senha" placeholder="Senha"><br>
+  <button onclick="login()">Entrar</button>
+  <p id="erro" style="color:red;"></p>
+</div>
+
+<!-- SISTEMA -->
+<div id="sistema" style="display:none;">
+
+  <!-- CARDS -->
+  <div class="cards">
+    <div class="card">
+      <h3>Total</h3>
+      <h2 id="total">0</h2>
+    </div>
+    <div class="card">
+      <h3>Exclusão</h3>
+      <h2 id="exclusao">0</h2>
+    </div>
+    <div class="card">
+      <h3>Suspensão</h3>
+      <h2 id="suspensao">0</h2>
+    </div>
   </div>
 
-  <!-- SISTEMA -->
-  <div id="sistema" style="display:none;">
+  <!-- FILTROS -->
+  <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
 
-    <button onclick="logout()">Sair</button>
+  <select id="filtroMes" onchange="filtrar()">
+    <option value="">Todos os meses</option>
+  </select>
 
-    <h2>📋 Processos</h2>
+  <select id="filtroLiminar" onchange="filtrar()">
+    <option value="">Todas as liminares</option>
+  </select>
 
-    <!-- FILTROS -->
-    <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+  <!-- TABELA -->
+  <table>
+    <thead>
+      <tr>
+        <th>Processo</th>
+        <th>Liminar</th>
+        <th>SEI</th>
+        <th>Local</th>
+        <th>Setor</th>
+        <th>Mês</th>
+      </tr>
+    </thead>
+    <tbody id="lista"></tbody>
+  </table>
 
-    <select id="filtroMes" onchange="filtrar()">
-      <option value="">Todos os meses</option>
-      <option value="JANEIRO">Janeiro</option>
-      <option value="FEVEREIRO">Fevereiro</option>
-      <option value="MARÇO">Março</option>
-    </select>
+  <!-- GRÁFICO -->
+  <canvas id="grafico"></canvas>
 
-    <!-- TABELA -->
-    <table>
-      <thead>
-        <tr>
-          <th>Processo</th>
-          <th>Liminar</th>
-          <th>SEI</th>
-          <th>Local</th>
-          <th>Setor</th>
-          <th>Mês</th>
-        </tr>
-      </thead>
-      <tbody id="lista"></tbody>
-    </table>
+</div>
 
-  </div>
+<script>
+const supabaseClient = supabase.createClient(
+  "https://ewibndqllbxfduyzvkpl.supabase.co",
+  "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+);
 
-  <script>
-    const supabaseClient = supabase.createClient(
-      "https://ewibndqllbxfduyzvkpl.supabase.co",
-      "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+let dadosGlobais = [];
+let grafico;
+
+// LOGIN
+async function login() {
+  const email = emailEl.value;
+  const senha = senhaEl.value;
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email, password: senha
+  });
+
+  if (error) {
+    erro.innerText = "Login inválido";
+    return;
+  }
+
+  verificarUsuario();
+}
+
+// LOGOUT
+async function logout() {
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+// VERIFICA LOGIN
+async function verificarUsuario() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    login.style.display = "none";
+    sistema.style.display = "block";
+    carregarProcessos();
+  }
+}
+
+// CARREGAR DADOS
+async function carregarProcessos() {
+  const { data } = await supabaseClient
+    .from('processos')
+    .select('*');
+
+  dadosGlobais = data;
+
+  preencherFiltros();
+  atualizarDashboard(data);
+  renderTabela(data);
+}
+
+// PREENCHER FILTROS AUTOMATICAMENTE
+function preencherFiltros() {
+  const meses = [...new Set(dadosGlobais.map(p => p.MES))];
+  const liminares = [...new Set(dadosGlobais.map(p => p.LIMINAR))];
+
+  filtroMes.innerHTML = '<option value="">Todos</option>';
+  meses.forEach(m => {
+    filtroMes.innerHTML += `<option value="${m}">${m}</option>`;
+  });
+
+  filtroLiminar.innerHTML = '<option value="">Todas</option>';
+  liminares.forEach(l => {
+    filtroLiminar.innerHTML += `<option value="${l}">${l}</option>`;
+  });
+}
+
+// TABELA
+function renderTabela(dados) {
+  lista.innerHTML = "";
+
+  dados.forEach(p => {
+    lista.innerHTML += `
+      <tr>
+        <td>${p.PROCESSO}</td>
+        <td>${p.LIMINAR}</td>
+        <td>${p.SEI}</td>
+        <td>${p.LOCAL}</td>
+        <td>${p.SETOR}</td>
+        <td>${p.MES}</td>
+      </tr>
+    `;
+  });
+}
+
+// FILTRO
+function filtrar() {
+  const termo = busca.value.toLowerCase();
+  const mes = filtroMes.value;
+  const liminar = filtroLiminar.value;
+
+  const filtrados = dadosGlobais.filter(p => {
+    const texto = JSON.stringify(p).toLowerCase();
+
+    return (
+      texto.includes(termo) &&
+      (mes === "" || p.MES === mes) &&
+      (liminar === "" || p.LIMINAR === liminar)
     );
+  });
 
-    let dadosGlobais = [];
+  atualizarDashboard(filtrados);
+  renderTabela(filtrados);
+}
 
-    // Verifica login
-    async function verificarUsuario() {
-      const { data } = await supabaseClient.auth.getSession();
+// DASHBOARD
+function atualizarDashboard(dados) {
+  total.innerText = dados.length;
 
-      if (data.session) {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("sistema").style.display = "block";
-        carregarProcessos();
-      }
+  const contagem = {};
+
+  dados.forEach(p => {
+    const tipo = p.LIMINAR;
+    contagem[tipo] = (contagem[tipo] || 0) + 1;
+  });
+
+  exclusao.innerText = contagem["EXCLUSÃO DE REGISTRO EM ÓRGÃO DE PROTEÇÃO DE CRÉDITO"] || 0;
+  suspensao.innerText = contagem["SUSPENSÃO IMEDIATA DE COBRANÇA"] || 0;
+
+  gerarGrafico(contagem);
+}
+
+// GRÁFICO
+function gerarGrafico(contagem) {
+  const labels = Object.keys(contagem);
+  const valores = Object.values(contagem);
+
+  if (grafico) grafico.destroy();
+
+  grafico = new Chart(graficoEl, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Quantidade',
+        data: valores
+      }]
     }
+  });
+}
 
-    // Login
-    async function login() {
-      const email = document.getElementById("email").value;
-      const senha = document.getElementById("senha").value;
+// REFERÊNCIAS
+const emailEl = document.getElementById("email");
+const senhaEl = document.getElementById("senha");
+const erro = document.getElementById("erro");
+const login = document.getElementById("login");
+const sistema = document.getElementById("sistema");
+const lista = document.getElementById("lista");
+const busca = document.getElementById("busca");
+const filtroMes = document.getElementById("filtroMes");
+const filtroLiminar = document.getElementById("filtroLiminar");
+const total = document.getElementById("total");
+const exclusao = document.getElementById("exclusao");
+const suspensao = document.getElementById("suspensao");
+const graficoEl = document.getElementById("grafico");
 
-      const { error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: senha
-      });
-
-      if (error) {
-        document.getElementById("erro").innerText = "Login inválido";
-        return;
-      }
-
-      verificarUsuario();
-    }
-
-    // Logout
-    async function logout() {
-      await supabaseClient.auth.signOut();
-      location.reload();
-    }
-
-    // Carrega dados
-    async function carregarProcessos() {
-      const { data, error } = await supabaseClient
-        .from('processos')
-        .select('*');
-
-      if (error) {
-        alert("Erro ao carregar dados");
-        return;
-      }
-
-      dadosGlobais = data;
-      renderTabela(data);
-    }
-
-    // Renderiza tabela
-    function renderTabela(dados) {
-      const lista = document.getElementById("lista");
-      lista.innerHTML = "";
-
-      dados.forEach(p => {
-        const linha = document.createElement("tr");
-
-        linha.innerHTML = `
-          <td>${p.PROCESSO || ""}</td>
-          <td>${p.LIMINAR || ""}</td>
-          <td>${p.SEI || ""}</td>
-          <td>${p.LOCAL || ""}</td>
-          <td>${p.SETOR || ""}</td>
-          <td>${p.MES || ""}</td>
-        `;
-
-        lista.appendChild(linha);
-      });
-    }
-
-    // 🔍 FILTRO (busca + mês)
-    function filtrar() {
-      const termo = document.getElementById("busca").value.toLowerCase();
-      const mes = document.getElementById("filtroMes").value;
-
-      const filtrados = dadosGlobais.filter(p => {
-        const texto =
-          (p.PROCESSO + " " +
-          p.LIMINAR + " " +
-          p.SEI + " " +
-          p.LOCAL + " " +
-          p.SETOR + " " +
-          p.MES).toLowerCase();
-
-        const matchTexto = texto.includes(termo);
-        const matchMes = mes === "" || p.MES === mes;
-
-        return matchTexto && matchMes;
-      });
-
-      renderTabela(filtrados);
-    }
-
-    verificarUsuario();
-  </script>
+verificarUsuario();
+</script>
 
 </body>
 </html>
