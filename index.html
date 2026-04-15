@@ -70,12 +70,25 @@
     lista.innerHTML = "";
 
     data.forEach(p => {
-      const item = document.createElement("li");
-      item.innerText =
-        p.numero + " | " + p.liminar + " | " + p.local;
-      lista.appendChild(item);
-    });
-  }
+      async function carregarProcessos() {
+  const { data } = await supabaseClient
+    .from('processos')
+    .select('*');
 
-  verificarUsuario();
-</script>
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  data.forEach(p => {
+    const item = document.createElement("li");
+
+    item.innerText =
+      "Processo: " + p.processo +
+      " | Liminar: " + p.liminar +
+      " | SEI: " + p.sei +
+      " | Local: " + p.local +
+      " | Setor: " + p.setor +
+      " | Mês: " + p.mes;
+
+    lista.appendChild(item);
+  });
+}
