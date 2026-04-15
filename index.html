@@ -8,6 +8,7 @@
 
   <h1>📊 Sistema de Processos</h1>
 
+  <!-- LOGIN -->
   <div id="login">
     <h2>🔐 Login</h2>
     <input type="email" id="email" placeholder="Email"><br><br>
@@ -16,28 +17,31 @@
     <p id="erro" style="color:red;"></p>
   </div>
 
+  <!-- SISTEMA -->
   <div id="sistema" style="display:none;">
     <button onclick="logout()">Sair</button>
     <h2>📋 Processos</h2>
+
     <table border="1" id="tabela">
-  <thead>
-    <tr>
-      <th>Processo</th>
-      <th>Liminar</th>
-      <th>SEI</th>
-      <th>Local</th>
-      <th>Setor</th>
-      <th>Mês</th>
-    </tr>
-  </thead>
-  <tbody id="lista"></tbody>
-</table>
+      <thead>
+        <tr>
+          <th>Processo</th>
+          <th>Liminar</th>
+          <th>SEI</th>
+          <th>Local</th>
+          <th>Setor</th>
+          <th>Mês</th>
+        </tr>
+      </thead>
+      <tbody id="lista"></tbody>
+    </table>
+
   </div>
 
   <script>
     const supabaseClient = supabase.createClient(
       "https://ewibndqllbxfduyzvkpl.supabase.co",
-      "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+      "SUA_CHAVE_AQUI"
     );
 
     // Verifica login
@@ -75,7 +79,7 @@
       location.reload();
     }
 
-    // 🔥 Carregar dados da tabela
+    // 🔥 Carregar dados corretamente na TABELA
     async function carregarProcessos() {
       const { data, error } = await supabaseClient
         .from('processos')
@@ -90,17 +94,18 @@
       lista.innerHTML = "";
 
       data.forEach(p => {
-        const item = document.createElement("li");
+        const linha = document.createElement("tr");
 
-       item.innerText =
-  "Processo: " + (p.PROCESSO || "") +
-  " | Liminar: " + (p.LIMINAR || "") +
-  " | SEI: " + (p.SEI || "") +
-  " | Local: " + (p.LOCAL || "") +
-  " | Setor: " + (p.SETOR || "") +
-  " | Mês: " + (p.MES || "");
+        linha.innerHTML = `
+          <td>${p.PROCESSO || ""}</td>
+          <td>${p.LIMINAR || ""}</td>
+          <td>${p.SEI || ""}</td>
+          <td>${p.LOCAL || ""}</td>
+          <td>${p.SETOR || ""}</td>
+          <td>${p.MES || ""}</td>
+        `;
 
-        lista.appendChild(item);
+        lista.appendChild(linha);
       });
     }
 
