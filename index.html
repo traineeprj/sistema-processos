@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sistema de Processos</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+  <style>
+    body { font-family: Arial; background:#f4f6f9; padding:20px; }
+    h1 { color:#2c3e50; }
+
+    .topo { display:flex; justify-content:space-between; }
+
+    .cards { display:flex; gap:20px; margin:20px 0; }
+    .card {
+      flex:1;
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      text-align:center;
+      box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    table { width:100%; border-collapse:collapse; background:white; }
+    th { background:#2c3e50; color:white; padding:10px; }
+    td { padding:8px; border-bottom:1px solid #ddd; }
+
+    input, select { padding:8px; margin:5px; }
+  </style>
+</head>
+
+<body>
+
+<div class="topo">
+  <h1>📊 Sistema de Processos</h1>
+  <button onclick="logout()">Sair</button>
+</div>
+
+<!-- LOGIN -->
+<div id="login">
+  <h2>🔐 Entrar</h2>
+  <input type="email" id="email" placeholder="E-mail"><br>
+  <input type="password" id="senha" placeholder="Senha"><br>
+  <button onclick="fazerLogin()">Entrar</button>
+  <p id="erro" style="color:red;"></p>
+</div>
+
+<!-- SISTEMA -->
+<div id="sistema" style="display:none;">
+
+  <div class="cards">
+    <div class="card">
+      <h3>Total</h3>
+      <h2 id="total">0</h2>
+    </div>
+    <div class="card">
+      <h3>Exclusão</h3>
+      <h2 id="exclusao">0</h2>
+    </div>
+    <div class="card">
+      <h3>Suspensão</h3>
+      <h2 id="suspensao">0</h2>
+    </div>
+  </div>
+
+  <input type="text" id="busca" placeholder="Buscar..." onkeyup="aplicarFiltros()">
+
+  <select id="filtroLiminar" onchange="aplicarFiltros()">
+    <option value="">Todas</option>
+    <option value="exclus">Exclusão</option>
+    <option value="suspens">Suspensão</option>
+  </select>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Processo</th>
+        <th>Liminar</th>
+        <th>SEI</th>
+        <th>Local</th>
+        <th>Setor</th>
+        <th>Mês</th>
+      </tr>
+    </thead>
+    <tbody id="lista"></tbody>
+  </table>
+
+</div>
+
+<script>
+const supabaseClient = supabase.createClient(
+  "https://ewibndqllbxfduyzvkpl.supabase.co",
+  "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+);
+
+let dadosGlobais = [];
+
+// LOGIN
+async function fazerLogin() {
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password: senha
+  });
+
+  if (error) {
+    document.getElementById("erro").innerText = "Login inválido";
+    return;
+  }
+
+  verificarUsuario();
+}
+
+// VERIFICAR LOGIN
+async function verificarUsuario() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("sistema").style.display = "block";
+    carregarProcessos();
+  }
+}
+
+// LOGOUT
+async function logout() {
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+// CARREGAR DADOS
+async function carregarProcessos() {
+  const { data, error } = await supabaseClient
+    .from('processos')
+    .select('*');
+
+  if (error) {
+    alert("Erro ao carregar");
+    return;
+  }
+
+  dadosGlobais = data;
+  atualizarCards(data);
+  renderizarTabela(data);
+}
+
+// CARDS
+function atualizarCards(dados) {
+  document.getElementById("total").innerText = dados.length;
+
+  document.getElementById("exclusao").innerText =
+    dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("exclus")).length;
+
+  document.getElementById("suspensao").innerText =
+    dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("suspens")).length;
+}
+
+// TABELA
+function renderizarTabela(dados) {
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  dados.forEach(p => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${p.PROCESSO || ""}</td>
+      <td>${p.LIMINAR || ""}</td>
+      <td>${p.SEI || ""}</td>
+      <td>${p.LOCAL || ""}</td>
+      <td>${p.SETOR || ""}</td>
+      <td>${p.MES || ""}</td>
+    `;
+
+    lista.appendChild(tr);
+  });
+}
+
+// FILTROS
+function aplicarFiltros() {
+  const busca = document.getElementById("busca").value.toLowerCase();
+  const tipo = document.getElementById("filtroLiminar").value;
+
+  const filtrados = dadosGlobais.filter(p => {
+    const texto = JSON.stringify(p).toLowerCase();
+    const liminar = (p.LIMINAR || "").toLowerCase();
+
+    let matchTipo = true;
+
+    if (tipo === "exclus") matchTipo = liminar.includes("exclus");
+    if (tipo === "suspens") matchTipo = liminar.includes("suspens");
+
+    return texto.includes(busca) && matchTipo;
+  });
+
+  atualizarCards(filtrados);
+  renderizarTabela(filtrados);
+}
+
+verificarUsuario();
+</script>
+
+</body>
+</html>
