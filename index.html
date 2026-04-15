@@ -3,43 +3,120 @@
 <head>
   <title>Sistema de Processos</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body { font-family: Arial; background:#f4f6f9; padding:20px; }
-    h1 { color:#2c3e50; }
-
-    .topo { display:flex; justify-content:space-between; }
-
-    .cards { display:flex; gap:20px; margin:20px 0; }
-    .card {
-      flex:1;
-      background:white;
-      padding:20px;
-      border-radius:10px;
-      text-align:center;
-      box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #f4f6f9;
+      display: flex;
     }
 
-    table { width:100%; border-collapse:collapse; background:white; }
-    th { background:#2c3e50; color:white; padding:10px; }
-    td { padding:8px; border-bottom:1px solid #ddd; }
+    /* SIDEBAR */
+    .sidebar {
+      width: 220px;
+      background: #2c3e50;
+      color: white;
+      height: 100vh;
+      padding: 20px;
+    }
 
-    input, select { padding:8px; margin:5px; }
+    .sidebar h2 {
+      margin-bottom: 30px;
+    }
+
+    .sidebar button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: none;
+      background: #34495e;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* CONTEÚDO */
+    .content {
+      flex: 1;
+      padding: 20px;
+    }
+
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* CARDS */
+    .cards {
+      display: flex;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .card {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* FILTROS */
+    input, select {
+      padding: 8px;
+      margin: 5px;
+    }
+
+    /* TABELA */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th {
+      background: #2c3e50;
+      color: white;
+      padding: 10px;
+    }
+
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    tr:hover {
+      background: #f1f1f1;
+    }
+
+    #login {
+      margin: auto;
+      text-align: center;
+    }
   </style>
 </head>
 
 <body>
 
-<div class="topo">
-  <h1>📊 Sistema de Processos</h1>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h2>📊 Sistema</h2>
+  <button onclick="mostrarTela('dashboard')">Dashboard</button>
+  <button onclick="mostrarTela('tabela')">Processos</button>
   <button onclick="logout()">Sair</button>
 </div>
 
+<!-- CONTEÚDO -->
+<div class="content">
+
 <!-- LOGIN -->
 <div id="login">
-  <h2>🔐 Entrar</h2>
-  <input type="email" id="email" placeholder="E-mail"><br>
-  <input type="password" id="senha" placeholder="Senha"><br>
+  <h2>🔐 Login</h2>
+  <input type="email" id="email" placeholder="Email"><br><br>
+  <input type="password" id="senha" placeholder="Senha"><br><br>
   <button onclick="fazerLogin()">Entrar</button>
   <p id="erro" style="color:red;"></p>
 </div>
@@ -47,6 +124,11 @@
 <!-- SISTEMA -->
 <div id="sistema" style="display:none;">
 
+  <div class="topo">
+    <h1>Dashboard</h1>
+  </div>
+
+  <!-- CARDS -->
   <div class="cards">
     <div class="card">
       <h3>Total</h3>
@@ -62,14 +144,21 @@
     </div>
   </div>
 
-  <input type="text" id="busca" placeholder="Buscar..." onkeyup="aplicarFiltros()">
+  <!-- GRÁFICO -->
+  <canvas id="grafico" height="100"></canvas>
 
-  <select id="filtroLiminar" onchange="aplicarFiltros()">
-    <option value="">Todas</option>
-    <option value="exclus">Exclusão</option>
-    <option value="suspens">Suspensão</option>
-  </select>
+  <!-- FILTROS -->
+  <div style="margin-top:20px;">
+    <input type="text" id="busca" placeholder="Buscar..." onkeyup="aplicarFiltros()">
 
+    <select id="filtroLiminar" onchange="aplicarFiltros()">
+      <option value="">Todas</option>
+      <option value="exclus">Exclusão</option>
+      <option value="suspens">Suspensão</option>
+    </select>
+  </div>
+
+  <!-- TABELA -->
   <table>
     <thead>
       <tr>
@@ -86,13 +175,16 @@
 
 </div>
 
+</div>
+
 <script>
 const supabaseClient = supabase.createClient(
   "https://ewibndqllbxfduyzvkpl.supabase.co",
-  "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+  "SUA_CHAVE_AQUI"
 );
 
 let dadosGlobais = [];
+let chart;
 
 // LOGIN
 async function fazerLogin() {
@@ -100,8 +192,7 @@ async function fazerLogin() {
   const senha = document.getElementById("senha").value;
 
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password: senha
+    email, password: senha
   });
 
   if (error) {
@@ -131,29 +222,30 @@ async function logout() {
 
 // CARREGAR DADOS
 async function carregarProcessos() {
-  const { data, error } = await supabaseClient
+  const { data } = await supabaseClient
     .from('processos')
     .select('*');
 
-  if (error) {
-    alert("Erro ao carregar");
-    return;
-  }
-
   dadosGlobais = data;
-  atualizarCards(data);
-  renderizarTabela(data);
+  atualizarTudo(data);
+}
+
+// ATUALIZA TUDO
+function atualizarTudo(dados) {
+  atualizarCards(dados);
+  renderizarTabela(dados);
+  atualizarGrafico(dados);
 }
 
 // CARDS
 function atualizarCards(dados) {
   document.getElementById("total").innerText = dados.length;
 
-  document.getElementById("exclusao").innerText =
-    dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("exclus")).length;
+  const exclusao = dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("exclus")).length;
+  const suspensao = dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("suspens")).length;
 
-  document.getElementById("suspensao").innerText =
-    dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("suspens")).length;
+  document.getElementById("exclusao").innerText = exclusao;
+  document.getElementById("suspensao").innerText = suspensao;
 }
 
 // TABELA
@@ -194,8 +286,28 @@ function aplicarFiltros() {
     return texto.includes(busca) && matchTipo;
   });
 
-  atualizarCards(filtrados);
-  renderizarTabela(filtrados);
+  atualizarTudo(filtrados);
+}
+
+// GRÁFICO
+function atualizarGrafico(dados) {
+  const exclusao = dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("exclus")).length;
+  const suspensao = dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("suspens")).length;
+
+  if (chart) chart.destroy();
+
+  const ctx = document.getElementById('grafico');
+
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Exclusão', 'Suspensão'],
+      datasets: [{
+        label: 'Quantidade',
+        data: [exclusao, suspensao]
+      }]
+    }
+  });
 }
 
 verificarUsuario();
