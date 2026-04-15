@@ -63,6 +63,11 @@
       margin: 5px;
     }
 
+    button {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
     canvas {
       margin-top: 20px;
       background: white;
@@ -110,13 +115,8 @@
   <!-- FILTROS -->
   <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
 
-  <select id="filtroMes" onchange="filtrar()">
-    <option value="">Todos os meses</option>
-  </select>
-
-  <select id="filtroLiminar" onchange="filtrar()">
-    <option value="">Todas as liminares</option>
-  </select>
+  <select id="filtroMes" onchange="filtrar()"></select>
+  <select id="filtroLiminar" onchange="filtrar()"></select>
 
   <!-- TABELA -->
   <table>
@@ -141,23 +141,36 @@
 <script>
 const supabaseClient = supabase.createClient(
   "https://ewibndqllbxfduyzvkpl.supabase.co",
-  "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+  "SUA_CHAVE_AQUI"
 );
 
 let dadosGlobais = [];
 let grafico;
 
+// REFERÊNCIAS
+const emailEl = document.getElementById("email");
+const senhaEl = document.getElementById("senha");
+const erroEl = document.getElementById("erro");
+const loginDiv = document.getElementById("login");
+const sistemaDiv = document.getElementById("sistema");
+const lista = document.getElementById("lista");
+const busca = document.getElementById("busca");
+const filtroMes = document.getElementById("filtroMes");
+const filtroLiminar = document.getElementById("filtroLiminar");
+const totalEl = document.getElementById("total");
+const exclusaoEl = document.getElementById("exclusao");
+const suspensaoEl = document.getElementById("suspensao");
+const graficoEl = document.getElementById("grafico");
+
 // LOGIN
 async function login() {
-  const email = emailEl.value;
-  const senha = senhaEl.value;
-
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email, password: senha
+    email: emailEl.value,
+    password: senhaEl.value
   });
 
   if (error) {
-    erro.innerText = "Login inválido";
+    erroEl.innerText = "Login inválido";
     return;
   }
 
@@ -170,13 +183,13 @@ async function logout() {
   location.reload();
 }
 
-// VERIFICA LOGIN
+// VERIFICAR USUÁRIO
 async function verificarUsuario() {
   const { data } = await supabaseClient.auth.getSession();
 
   if (data.session) {
-    login.style.display = "none";
-    sistema.style.display = "block";
+    loginDiv.style.display = "none";
+    sistemaDiv.style.display = "block";
     carregarProcessos();
   }
 }
@@ -194,17 +207,17 @@ async function carregarProcessos() {
   renderTabela(data);
 }
 
-// PREENCHER FILTROS AUTOMATICAMENTE
+// FILTROS DINÂMICOS
 function preencherFiltros() {
   const meses = [...new Set(dadosGlobais.map(p => p.MES))];
   const liminares = [...new Set(dadosGlobais.map(p => p.LIMINAR))];
 
-  filtroMes.innerHTML = '<option value="">Todos</option>';
+  filtroMes.innerHTML = '<option value="">Todos os meses</option>';
   meses.forEach(m => {
     filtroMes.innerHTML += `<option value="${m}">${m}</option>`;
   });
 
-  filtroLiminar.innerHTML = '<option value="">Todas</option>';
+  filtroLiminar.innerHTML = '<option value="">Todas as liminares</option>';
   liminares.forEach(l => {
     filtroLiminar.innerHTML += `<option value="${l}">${l}</option>`;
   });
@@ -228,7 +241,7 @@ function renderTabela(dados) {
   });
 }
 
-// FILTRO
+// FILTRAR
 function filtrar() {
   const termo = busca.value.toLowerCase();
   const mes = filtroMes.value;
@@ -250,17 +263,16 @@ function filtrar() {
 
 // DASHBOARD
 function atualizarDashboard(dados) {
-  total.innerText = dados.length;
+  totalEl.innerText = dados.length;
 
   const contagem = {};
 
   dados.forEach(p => {
-    const tipo = p.LIMINAR;
-    contagem[tipo] = (contagem[tipo] || 0) + 1;
+    contagem[p.LIMINAR] = (contagem[p.LIMINAR] || 0) + 1;
   });
 
-  exclusao.innerText = contagem["EXCLUSÃO DE REGISTRO EM ÓRGÃO DE PROTEÇÃO DE CRÉDITO"] || 0;
-  suspensao.innerText = contagem["SUSPENSÃO IMEDIATA DE COBRANÇA"] || 0;
+  exclusaoEl.innerText = contagem["EXCLUSÃO DE REGISTRO EM ÓRGÃO DE PROTEÇÃO DE CRÉDITO"] || 0;
+  suspensaoEl.innerText = contagem["SUSPENSÃO IMEDIATA DE COBRANÇA"] || 0;
 
   gerarGrafico(contagem);
 }
@@ -283,21 +295,6 @@ function gerarGrafico(contagem) {
     }
   });
 }
-
-// REFERÊNCIAS
-const emailEl = document.getElementById("email");
-const senhaEl = document.getElementById("senha");
-const erro = document.getElementById("erro");
-const login = document.getElementById("login");
-const sistema = document.getElementById("sistema");
-const lista = document.getElementById("lista");
-const busca = document.getElementById("busca");
-const filtroMes = document.getElementById("filtroMes");
-const filtroLiminar = document.getElementById("filtroLiminar");
-const total = document.getElementById("total");
-const exclusao = document.getElementById("exclusao");
-const suspensao = document.getElementById("suspensao");
-const graficoEl = document.getElementById("grafico");
 
 verificarUsuario();
 </script>
