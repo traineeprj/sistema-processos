@@ -2,80 +2,76 @@
 <html>
 <head>
   <title>Sistema de Processos</title>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
       margin: 0;
       font-family: Arial;
-      background: linear-gradient(135deg, #2c3e50, #4ca1af);
-      height: 100vh;
+      background: #f4f6f9;
     }
 
     /* LOGIN */
-    .login-container {
+    #login {
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      background: linear-gradient(135deg, #2c3e50, #3498db);
     }
 
     .login-box {
       background: white;
       padding: 40px;
-      border-radius: 12px;
-      width: 320px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      border-radius: 10px;
       text-align: center;
+      width: 300px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
-    .logo {
-      width: 180px;
+    .login-box img {
+      width: 150px;
       margin-bottom: 20px;
     }
 
     input {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       margin: 10px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
     }
 
     button {
+      padding: 10px;
       width: 100%;
-      padding: 12px;
       background: #2c3e50;
       color: white;
       border: none;
-      border-radius: 6px;
       cursor: pointer;
     }
 
-    button:hover {
-      background: #4ca1af;
-    }
-
     /* SISTEMA */
-    #app {
+    #sistema {
       display: none;
     }
 
-    .layout {
+    .container {
       display: flex;
+      height: 100vh;
     }
 
     .sidebar {
       width: 220px;
       background: #2c3e50;
       color: white;
-      height: 100vh;
       padding: 20px;
     }
 
+    .sidebar h2 {
+      margin-bottom: 20px;
+    }
+
     .sidebar button {
+      width: 100%;
       margin-top: 10px;
       background: #34495e;
     }
@@ -83,45 +79,14 @@
     .content {
       flex: 1;
       padding: 20px;
-      background: #f4f6f9;
     }
 
-    .cards {
-      display: flex;
-      gap: 20px;
-    }
-
-    .card {
-      flex: 1;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-    }
-
-    table {
+    /* IFRAME */
+    .dashboard-frame {
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: white;
-    }
-
-    th {
-      background: #2c3e50;
-      color: white;
-      padding: 10px;
-    }
-
-    td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-    }
-
-    iframe {
-      width: 100%;
-      height: 600px;
+      height: 90vh;
       border: none;
-      margin-top: 20px;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -129,85 +94,44 @@
 <body>
 
 <!-- LOGIN -->
-<div id="login" class="login-container">
+<div id="login">
   <div class="login-box">
+    <!-- SE NÃO TIVER LOGO, pode remover essa linha -->
+    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Logo-placeholder.png">
 
-    <!-- LOGO ONLINE -->
-    <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo-placeholder.png" class="logo">
-
-    <h2>Acesso ao Sistema</h2>
-
-    <input type="email" id="email" placeholder="E-mail">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email">
     <input type="password" id="senha" placeholder="Senha">
-
     <button onclick="fazerLogin()">Entrar</button>
     <p id="erro" style="color:red;"></p>
   </div>
 </div>
 
 <!-- SISTEMA -->
-<div id="app">
-
-  <div class="layout">
+<div id="sistema">
+  <div class="container">
 
     <!-- SIDEBAR -->
     <div class="sidebar">
       <h2>📊 Sistema</h2>
-      <button onclick="mostrarTela('dashboard')">Dashboard</button>
-      <button onclick="mostrarTela('tabela')">Processos</button>
+      <button onclick="mostrarDashboard()">Dashboard</button>
       <button onclick="logout()">Sair</button>
     </div>
 
     <!-- CONTEÚDO -->
     <div class="content">
 
-      <!-- DASHBOARD -->
-      <div id="dashboard">
-        <h1>Dashboard</h1>
+      <h1>Dashboard</h1>
 
-        <div class="cards">
-          <div class="card">
-            <h3>Total</h3>
-            <h2 id="total">0</h2>
-          </div>
-          <div class="card">
-            <h3>Exclusão</h3>
-            <h2 id="exclusao">0</h2>
-          </div>
-          <div class="card">
-            <h3>Suspensão</h3>
-            <h2 id="suspensao">0</h2>
-          </div>
-        </div>
-
-        <canvas id="grafico"></canvas>
-
-        <!-- LOOKER -->
-        <iframe src="https://datastudio.google.com/embed/reporting/eac2f3e4-77b5-4551-86b7-1a934ad0d3ea/page/3RPvF"></iframe>
-      </div>
-
-      <!-- TABELA -->
-      <div id="tabela" style="display:none;">
-        <h1>Processos</h1>
-
-        <input type="text" id="busca" placeholder="Buscar..." onkeyup="aplicarFiltros()">
-
-        <table>
-          <thead>
-            <tr>
-              <th>Processo</th>
-              <th>Liminar</th>
-              <th>SEI</th>
-              <th>Local</th>
-              <th>Setor</th>
-              <th>Mês</th>
-            </tr>
-          </thead>
-          <tbody id="lista"></tbody>
-        </table>
-      </div>
+      <!-- LOOKER -->
+      <iframe 
+        src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"
+        class="dashboard-frame"
+        allowfullscreen>
+      </iframe>
 
     </div>
+
   </div>
 </div>
 
@@ -217,16 +141,14 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
 );
 
-let dadosGlobais = [];
-let chart;
-
 // LOGIN
 async function fazerLogin() {
   const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
 
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email, password: senha
+    email,
+    password: senha
   });
 
   if (error) {
@@ -237,14 +159,13 @@ async function fazerLogin() {
   verificarUsuario();
 }
 
-// VERIFICAR
+// VERIFICAR LOGIN
 async function verificarUsuario() {
   const { data } = await supabaseClient.auth.getSession();
 
   if (data.session) {
     document.getElementById("login").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    carregarProcessos();
+    document.getElementById("sistema").style.display = "block";
   }
 }
 
@@ -254,87 +175,9 @@ async function logout() {
   location.reload();
 }
 
-// TROCAR TELA
-function mostrarTela(tela) {
-  document.getElementById("dashboard").style.display = tela === "dashboard" ? "block" : "none";
-  document.getElementById("tabela").style.display = tela === "tabela" ? "block" : "none";
-}
-
-// CARREGAR DADOS
-async function carregarProcessos() {
-  const { data } = await supabaseClient.from('processos').select('*');
-
-  dadosGlobais = data;
-  atualizarTudo(data);
-}
-
-// ATUALIZA
-function atualizarTudo(dados) {
-  atualizarCards(dados);
-  renderizarTabela(dados);
-  atualizarGrafico(dados);
-}
-
-// CARDS
-function atualizarCards(dados) {
-  document.getElementById("total").innerText = dados.length;
-
-  document.getElementById("exclusao").innerText =
-    dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("exclus")).length;
-
-  document.getElementById("suspensao").innerText =
-    dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("suspens")).length;
-}
-
-// TABELA
-function renderizarTabela(dados) {
-  const lista = document.getElementById("lista");
-  lista.innerHTML = "";
-
-  dados.forEach(p => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${p.PROCESSO || ""}</td>
-      <td>${p.LIMINAR || ""}</td>
-      <td>${p.SEI || ""}</td>
-      <td>${p.LOCAL || ""}</td>
-      <td>${p.SETOR || ""}</td>
-      <td>${p.MES || ""}</td>
-    `;
-
-    lista.appendChild(tr);
-  });
-}
-
-// FILTRO
-function aplicarFiltros() {
-  const busca = document.getElementById("busca").value.toLowerCase();
-
-  const filtrados = dadosGlobais.filter(p =>
-    JSON.stringify(p).toLowerCase().includes(busca)
-  );
-
-  atualizarTudo(filtrados);
-}
-
-// GRÁFICO
-function atualizarGrafico(dados) {
-  const exclusao = dados.filter(p => (p.LIMINAR || "").includes("EXCLUS")).length;
-  const suspensao = dados.filter(p => (p.LIMINAR || "").includes("SUSPENS")).length;
-
-  if (chart) chart.destroy();
-
-  chart = new Chart(document.getElementById("grafico"), {
-    type: 'bar',
-    data: {
-      labels: ['Exclusão', 'Suspensão'],
-      datasets: [{
-        label: 'Quantidade',
-        data: [exclusao, suspensao]
-      }]
-    }
-  });
+// MOSTRAR DASHBOARD
+function mostrarDashboard() {
+  // já está na tela principal (iframe sempre visível)
 }
 
 verificarUsuario();
