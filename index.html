@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Sistema de Processos</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -22,10 +23,6 @@
       padding: 20px;
     }
 
-    .sidebar h2 {
-      margin-bottom: 30px;
-    }
-
     .sidebar button {
       width: 100%;
       margin-top: 10px;
@@ -36,16 +33,14 @@
       cursor: pointer;
     }
 
+    .sidebar button:hover {
+      background: #1abc9c;
+    }
+
     /* CONTEÚDO */
     .content {
       flex: 1;
       padding: 20px;
-    }
-
-    .topo {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
 
     /* CARDS */
@@ -62,12 +57,6 @@
       border-radius: 10px;
       text-align: center;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    /* FILTROS */
-    input, select {
-      padding: 8px;
-      margin: 5px;
     }
 
     /* TABELA */
@@ -92,6 +81,11 @@
       background: #f1f1f1;
     }
 
+    input, select {
+      padding: 8px;
+      margin: 5px;
+    }
+
     #login {
       margin: auto;
       text-align: center;
@@ -105,7 +99,7 @@
 <div class="sidebar">
   <h2>📊 Sistema</h2>
   <button onclick="mostrarTela('dashboard')">Dashboard</button>
-  <button onclick="mostrarTela('tabela')">Processos</button>
+  <button onclick="mostrarTela('processos')">Processos</button>
   <button onclick="logout()">Sair</button>
 </div>
 
@@ -124,54 +118,71 @@
 <!-- SISTEMA -->
 <div id="sistema" style="display:none;">
 
-  <div class="topo">
-    <h1>Dashboard</h1>
+  <!-- 🔥 DASHBOARD LOOKER -->
+  <div id="telaDashboard">
+    <h1>📊 Dashboard</h1>
+
+    <iframe 
+      width="100%" 
+      height="600" 
+      src="https://datastudio.google.com/embed/reporting/eac2f3e4-77b5-4551-86b7-1a934ad0d3ea/page/3RPvF"
+      frameborder="0"
+      style="border:0"
+      allowfullscreen>
+    </iframe>
   </div>
 
-  <!-- CARDS -->
-  <div class="cards">
-    <div class="card">
-      <h3>Total</h3>
-      <h2 id="total">0</h2>
+  <!-- 🔥 PROCESSOS -->
+  <div id="telaProcessos" style="display:none;">
+
+    <h1>📋 Processos</h1>
+
+    <!-- CARDS -->
+    <div class="cards">
+      <div class="card">
+        <h3>Total</h3>
+        <h2 id="total">0</h2>
+      </div>
+      <div class="card">
+        <h3>Exclusão</h3>
+        <h2 id="exclusao">0</h2>
+      </div>
+      <div class="card">
+        <h3>Suspensão</h3>
+        <h2 id="suspensao">0</h2>
+      </div>
     </div>
-    <div class="card">
-      <h3>Exclusão</h3>
-      <h2 id="exclusao">0</h2>
+
+    <!-- GRÁFICO -->
+    <canvas id="grafico" height="100"></canvas>
+
+    <!-- FILTROS -->
+    <div>
+      <input type="text" id="busca" placeholder="Buscar..." onkeyup="aplicarFiltros()">
+
+      <select id="filtroLiminar" onchange="aplicarFiltros()">
+        <option value="">Todas</option>
+        <option value="exclus">Exclusão</option>
+        <option value="suspens">Suspensão</option>
+      </select>
     </div>
-    <div class="card">
-      <h3>Suspensão</h3>
-      <h2 id="suspensao">0</h2>
-    </div>
+
+    <!-- TABELA -->
+    <table>
+      <thead>
+        <tr>
+          <th>Processo</th>
+          <th>Liminar</th>
+          <th>SEI</th>
+          <th>Local</th>
+          <th>Setor</th>
+          <th>Mês</th>
+        </tr>
+      </thead>
+      <tbody id="lista"></tbody>
+    </table>
+
   </div>
-
-  <!-- GRÁFICO -->
-  <canvas id="grafico" height="100"></canvas>
-
-  <!-- FILTROS -->
-  <div style="margin-top:20px;">
-    <input type="text" id="busca" placeholder="Buscar..." onkeyup="aplicarFiltros()">
-
-    <select id="filtroLiminar" onchange="aplicarFiltros()">
-      <option value="">Todas</option>
-      <option value="exclus">Exclusão</option>
-      <option value="suspens">Suspensão</option>
-    </select>
-  </div>
-
-  <!-- TABELA -->
-  <table>
-    <thead>
-      <tr>
-        <th>Processo</th>
-        <th>Liminar</th>
-        <th>SEI</th>
-        <th>Local</th>
-        <th>Setor</th>
-        <th>Mês</th>
-      </tr>
-    </thead>
-    <tbody id="lista"></tbody>
-  </table>
 
 </div>
 
@@ -185,6 +196,20 @@ const supabaseClient = supabase.createClient(
 
 let dadosGlobais = [];
 let chart;
+
+// 🔥 TROCA DE TELAS
+function mostrarTela(tela) {
+  document.getElementById("telaDashboard").style.display = "none";
+  document.getElementById("telaProcessos").style.display = "none";
+
+  if (tela === "dashboard") {
+    document.getElementById("telaDashboard").style.display = "block";
+  }
+
+  if (tela === "processos") {
+    document.getElementById("telaProcessos").style.display = "block";
+  }
+}
 
 // LOGIN
 async function fazerLogin() {
@@ -210,6 +235,7 @@ async function verificarUsuario() {
   if (data.session) {
     document.getElementById("login").style.display = "none";
     document.getElementById("sistema").style.display = "block";
+    mostrarTela('dashboard'); // começa no dashboard
     carregarProcessos();
   }
 }
