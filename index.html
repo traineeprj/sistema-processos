@@ -2,7 +2,9 @@
 <html>
 <head>
   <title>Sistema de Processos</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
@@ -13,11 +15,11 @@
 
     /* LOGIN */
     #login {
-      height: 100vh;
       display: flex;
+      height: 100vh;
       justify-content: center;
       align-items: center;
-      background: linear-gradient(135deg, #2c3e50, #3498db);
+      background: linear-gradient(120deg, #2c3e50, #3498db);
     }
 
     .login-box {
@@ -26,10 +28,9 @@
       border-radius: 10px;
       text-align: center;
       width: 300px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
-    input {
+    input, select {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -38,31 +39,26 @@
     button {
       padding: 10px;
       width: 100%;
-      background: #2c3e50;
-      color: white;
+      background: #3498db;
       border: none;
+      color: white;
       cursor: pointer;
     }
 
     /* SISTEMA */
-    #sistema {
-      display: none;
-    }
-
-    .container {
+    .layout {
       display: flex;
-      height: 100vh;
     }
 
     .sidebar {
       width: 220px;
       background: #2c3e50;
       color: white;
+      height: 100vh;
       padding: 20px;
     }
 
     .sidebar button {
-      width: 100%;
       margin-top: 10px;
       background: #34495e;
     }
@@ -72,11 +68,41 @@
       padding: 20px;
     }
 
+    .cards {
+      display: flex;
+      gap: 20px;
+    }
+
+    .card {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      background: white;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #2c3e50;
+      color: white;
+      padding: 10px;
+    }
+
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+
     iframe {
       width: 100%;
-      height: 90vh;
+      height: 700px;
       border: none;
-      border-radius: 10px;
     }
   </style>
 </head>
@@ -86,84 +112,105 @@
 <!-- LOGIN -->
 <div id="login">
   <div class="login-box">
-    <h2>Login</h2>
+    <h2>🔐 Login</h2>
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="senha" placeholder="Senha">
-    <button onclick="fazerLogin()">Entrar</button>
-    <p id="erro" style="color:red;"></p>
+    <button onclick="login()">Entrar</button>
+    <p id="erro"></p>
   </div>
 </div>
 
 <!-- SISTEMA -->
-<div id="sistema">
-  <div class="container">
+<div id="sistema" style="display:none;">
+  <div class="layout">
 
-    <!-- SIDEBAR -->
+    <!-- MENU -->
     <div class="sidebar">
       <h2>📊 Sistema</h2>
-      <button onclick="mostrarDashboard()">Dashboard</button>
+      <button onclick="mostrarTela('dashboard')">Dashboard</button>
+      <button onclick="mostrarTela('tabela')">Processos</button>
       <button onclick="logout()">Sair</button>
     </div>
 
     <!-- CONTEÚDO -->
     <div class="content">
-      <h1>Dashboard</h1>
 
-      <iframe 
-        src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"
-        allowfullscreen>
-      </iframe>
+      <!-- DASHBOARD (LOOKER) -->
+      <div id="dashboardTela">
+        <h1>Dashboard</h1>
+
+        <iframe src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"></iframe>
+      </div>
+
+      <!-- TABELA -->
+      <div id="tabelaTela" style="display:none;">
+        <h1>Processos</h1>
+
+        <!-- CARDS -->
+        <div class="cards">
+          <div class="card">
+            <h3>Total</h3>
+            <h2 id="total">0</h2>
+          </div>
+          <div class="card">
+            <h3>Valor Total</h3>
+            <h2 id="valorTotal">0</h2>
+          </div>
+        </div>
+
+        <!-- FILTROS -->
+        <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+
+        <select id="filtroAno" onchange="filtrar()"></select>
+        <select id="filtroLocal" onchange="filtrar()"></select>
+        <select id="filtroDiretoria" onchange="filtrar()"></select>
+
+        <!-- GRÁFICO -->
+        <canvas id="grafico"></canvas>
+
+        <!-- TABELA -->
+        <table>
+          <thead>
+            <tr>
+              <th>Processo</th>
+              <th>Local</th>
+              <th>Objeto</th>
+              <th>Valor</th>
+              <th>Diretoria</th>
+              <th>Ano</th>
+            </tr>
+          </thead>
+          <tbody id="lista"></tbody>
+        </table>
+
+      </div>
 
     </div>
-
   </div>
 </div>
 
 <script>
 const supabaseClient = supabase.createClient(
   "https://ewibndqllbxfduyzvkpl.supabase.co",
-  "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+  "SUA_CHAVE_AQUI"
 );
 
-// 🔥 MONITORA SESSÃO (corrige erro de token)
-supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_OUT' || !session) {
-    location.reload();
-  }
-});
+let dadosGlobais = [];
+let chart;
 
 // LOGIN
-async function fazerLogin() {
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
-
+async function login() {
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password: senha
+    email: email.value,
+    password: senha.value
   });
 
-  if (error) {
-    document.getElementById("erro").innerText = "Login inválido";
-    return;
-  }
+  if (error) return erro.innerText = "Erro no login";
 
-  verificarUsuario();
-}
+  document.getElementById("login").style.display = "none";
+  document.getElementById("sistema").style.display = "block";
 
-// 🔥 VERIFICAÇÃO SEGURA DE SESSÃO
-async function verificarUsuario() {
-  const { data, error } = await supabaseClient.auth.getSession();
-
-  if (error) {
-    console.log("Erro sessão:", error);
-    await supabaseClient.auth.signOut();
-    return;
-  }
-
-  if (data.session) {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("sistema").style.display = "block";
-  }
+  carregar();
 }
 
 // LOGOUT
@@ -172,13 +219,96 @@ async function logout() {
   location.reload();
 }
 
-// DASHBOARD (placeholder)
-function mostrarDashboard() {
-  // já está visível
+// TROCAR TELA
+function mostrarTela(tela) {
+  dashboardTela.style.display = tela === "dashboard" ? "block" : "none";
+  tabelaTela.style.display = tela === "tabela" ? "block" : "none";
 }
 
-// INICIAR
-verificarUsuario();
+// CARREGAR DADOS
+async function carregar() {
+  const { data } = await supabaseClient
+    .from("relatorio")
+    .select("*");
+
+  dadosGlobais = data;
+
+  preencherFiltros(data);
+  atualizar(data);
+}
+
+// PREENCHER FILTROS
+function preencherFiltros(dados) {
+  const anos = [...new Set(dados.map(d => d.ano))];
+  const locais = [...new Set(dados.map(d => d.local))];
+  const diretorias = [...new Set(dados.map(d => d.diretoria))];
+
+  filtroAno.innerHTML = "<option value=''>Ano</option>" + anos.map(a => `<option>${a}</option>`).join("");
+  filtroLocal.innerHTML = "<option value=''>Local</option>" + locais.map(l => `<option>${l}</option>`).join("");
+  filtroDiretoria.innerHTML = "<option value=''>Diretoria</option>" + diretorias.map(d => `<option>${d}</option>`).join("");
+}
+
+// FILTRO
+function filtrar() {
+  const busca = busca.value.toLowerCase();
+  const ano = filtroAno.value;
+  const local = filtroLocal.value;
+  const diretoria = filtroDiretoria.value;
+
+  const filtrados = dadosGlobais.filter(p => {
+    return (
+      JSON.stringify(p).toLowerCase().includes(busca) &&
+      (!ano || p.ano == ano) &&
+      (!local || p.local == local) &&
+      (!diretoria || p.diretoria == diretoria)
+    );
+  });
+
+  atualizar(filtrados);
+}
+
+// ATUALIZAR TUDO
+function atualizar(dados) {
+  total.innerText = dados.length;
+
+  const valor = dados.reduce((s, p) => s + Number(p.valor_da_causa || 0), 0);
+  valorTotal.innerText = "R$ " + valor.toLocaleString();
+
+  lista.innerHTML = dados.map(p => `
+    <tr>
+      <td>${p.processo}</td>
+      <td>${p.local}</td>
+      <td>${p.objeto_da_acao}</td>
+      <td>R$ ${p.valor_da_causa}</td>
+      <td>${p.diretoria}</td>
+      <td>${p.ano}</td>
+    </tr>
+  `).join("");
+
+  atualizarGrafico(dados);
+}
+
+// GRÁFICO
+function atualizarGrafico(dados) {
+  const porAno = {};
+
+  dados.forEach(p => {
+    porAno[p.ano] = (porAno[p.ano] || 0) + 1;
+  });
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(grafico, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(porAno),
+      datasets: [{
+        label: 'Processos por Ano',
+        data: Object.values(porAno)
+      }]
+    }
+  });
+}
 </script>
 
 </body>
