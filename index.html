@@ -29,11 +29,6 @@
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
-    .login-box img {
-      width: 150px;
-      margin-bottom: 20px;
-    }
-
     input {
       width: 100%;
       padding: 10px;
@@ -66,10 +61,6 @@
       padding: 20px;
     }
 
-    .sidebar h2 {
-      margin-bottom: 20px;
-    }
-
     .sidebar button {
       width: 100%;
       margin-top: 10px;
@@ -81,8 +72,7 @@
       padding: 20px;
     }
 
-    /* IFRAME */
-    .dashboard-frame {
+    iframe {
       width: 100%;
       height: 90vh;
       border: none;
@@ -96,9 +86,6 @@
 <!-- LOGIN -->
 <div id="login">
   <div class="login-box">
-    <!-- SE NÃO TIVER LOGO, pode remover essa linha -->
-    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Logo-placeholder.png">
-
     <h2>Login</h2>
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="senha" placeholder="Senha">
@@ -120,13 +107,10 @@
 
     <!-- CONTEÚDO -->
     <div class="content">
-
       <h1>Dashboard</h1>
 
-      <!-- LOOKER -->
       <iframe 
         src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"
-        class="dashboard-frame"
         allowfullscreen>
       </iframe>
 
@@ -140,6 +124,13 @@ const supabaseClient = supabase.createClient(
   "https://ewibndqllbxfduyzvkpl.supabase.co",
   "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
 );
+
+// 🔥 MONITORA SESSÃO (corrige erro de token)
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT' || !session) {
+    location.reload();
+  }
+});
 
 // LOGIN
 async function fazerLogin() {
@@ -159,9 +150,15 @@ async function fazerLogin() {
   verificarUsuario();
 }
 
-// VERIFICAR LOGIN
+// 🔥 VERIFICAÇÃO SEGURA DE SESSÃO
 async function verificarUsuario() {
-  const { data } = await supabaseClient.auth.getSession();
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.log("Erro sessão:", error);
+    await supabaseClient.auth.signOut();
+    return;
+  }
 
   if (data.session) {
     document.getElementById("login").style.display = "none";
@@ -175,11 +172,12 @@ async function logout() {
   location.reload();
 }
 
-// MOSTRAR DASHBOARD
+// DASHBOARD (placeholder)
 function mostrarDashboard() {
-  // já está na tela principal (iframe sempre visível)
+  // já está visível
 }
 
+// INICIAR
 verificarUsuario();
 </script>
 
