@@ -23,6 +23,10 @@
       padding: 20px;
     }
 
+    .sidebar h2 {
+      margin-bottom: 30px;
+    }
+
     .sidebar button {
       width: 100%;
       margin-top: 10px;
@@ -33,7 +37,7 @@
       cursor: pointer;
     }
 
-    .sidebar button:hover {
+    .sidebar button.active {
       background: #1abc9c;
     }
 
@@ -41,6 +45,12 @@
     .content {
       flex: 1;
       padding: 20px;
+    }
+
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     /* CARDS */
@@ -57,6 +67,12 @@
       border-radius: 10px;
       text-align: center;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* FILTROS */
+    input, select {
+      padding: 8px;
+      margin: 5px;
     }
 
     /* TABELA */
@@ -81,11 +97,6 @@
       background: #f1f1f1;
     }
 
-    input, select {
-      padding: 8px;
-      margin: 5px;
-    }
-
     #login {
       margin: auto;
       text-align: center;
@@ -99,7 +110,7 @@
 <div class="sidebar">
   <h2>📊 Sistema</h2>
   <button onclick="mostrarTela('dashboard')">Dashboard</button>
-  <button onclick="mostrarTela('processos')">Processos</button>
+  <button onclick="mostrarTela('tabela')">Processos</button>
   <button onclick="logout()">Sair</button>
 </div>
 
@@ -118,24 +129,25 @@
 <!-- SISTEMA -->
 <div id="sistema" style="display:none;">
 
-  <!-- 🔥 DASHBOARD LOOKER -->
-  <div id="telaDashboard">
-    <h1>📊 Dashboard</h1>
+  <!-- DASHBOARD LOOKER -->
+  <div id="dashboard">
+    <h1>Dashboard Avançado</h1>
 
-    <iframe 
-      width="100%" 
-      height="600" 
-      src="https://datastudio.google.com/embed/reporting/eac2f3e4-77b5-4551-86b7-1a934ad0d3ea/page/3RPvF"
-      frameborder="0"
-      style="border:0"
-      allowfullscreen>
-    </iframe>
+    <div style="width:100%; height:80vh;">
+      <iframe 
+        src="https://datastudio.google.com/embed/reporting/eac2f3e4-77b5-4551-86b7-1a934ad0d3ea/page/3RPvF"
+        style="width:100%; height:100%; border:none;"
+        allowfullscreen>
+      </iframe>
+    </div>
   </div>
 
-  <!-- 🔥 PROCESSOS -->
-  <div id="telaProcessos" style="display:none;">
+  <!-- TABELA + DASHBOARD INTERNO -->
+  <div id="tabelaTela" style="display:none;">
 
-    <h1>📋 Processos</h1>
+    <div class="topo">
+      <h1>Processos</h1>
+    </div>
 
     <!-- CARDS -->
     <div class="cards">
@@ -157,7 +169,7 @@
     <canvas id="grafico" height="100"></canvas>
 
     <!-- FILTROS -->
-    <div>
+    <div style="margin-top:20px;">
       <input type="text" id="busca" placeholder="Buscar..." onkeyup="aplicarFiltros()">
 
       <select id="filtroLiminar" onchange="aplicarFiltros()">
@@ -197,20 +209,6 @@ const supabaseClient = supabase.createClient(
 let dadosGlobais = [];
 let chart;
 
-// 🔥 TROCA DE TELAS
-function mostrarTela(tela) {
-  document.getElementById("telaDashboard").style.display = "none";
-  document.getElementById("telaProcessos").style.display = "none";
-
-  if (tela === "dashboard") {
-    document.getElementById("telaDashboard").style.display = "block";
-  }
-
-  if (tela === "processos") {
-    document.getElementById("telaProcessos").style.display = "block";
-  }
-}
-
 // LOGIN
 async function fazerLogin() {
   const email = document.getElementById("email").value;
@@ -235,7 +233,7 @@ async function verificarUsuario() {
   if (data.session) {
     document.getElementById("login").style.display = "none";
     document.getElementById("sistema").style.display = "block";
-    mostrarTela('dashboard'); // começa no dashboard
+    mostrarTela('dashboard');
     carregarProcessos();
   }
 }
@@ -244,6 +242,24 @@ async function verificarUsuario() {
 async function logout() {
   await supabaseClient.auth.signOut();
   location.reload();
+}
+
+// TROCAR TELA
+function mostrarTela(tela) {
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("tabelaTela").style.display = "none";
+
+  document.querySelectorAll(".sidebar button").forEach(btn => btn.classList.remove("active"));
+
+  if (tela === "dashboard") {
+    document.getElementById("dashboard").style.display = "block";
+    document.querySelectorAll(".sidebar button")[0].classList.add("active");
+  }
+
+  if (tela === "tabela") {
+    document.getElementById("tabelaTela").style.display = "block";
+    document.querySelectorAll(".sidebar button")[1].classList.add("active");
+  }
 }
 
 // CARREGAR DADOS
@@ -315,10 +331,14 @@ function aplicarFiltros() {
   atualizarTudo(filtrados);
 }
 
-// GRÁFICO
+// GRÁFICO MELHORADO (POR LOCAL)
 function atualizarGrafico(dados) {
-  const exclusao = dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("exclus")).length;
-  const suspensao = dados.filter(p => (p.LIMINAR || "").toLowerCase().includes("suspens")).length;
+  const locais = {};
+
+  dados.forEach(p => {
+    const local = p.LOCAL || "Outro";
+    locais[local] = (locais[local] || 0) + 1;
+  });
 
   if (chart) chart.destroy();
 
@@ -327,10 +347,10 @@ function atualizarGrafico(dados) {
   chart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Exclusão', 'Suspensão'],
+      labels: Object.keys(locais),
       datasets: [{
-        label: 'Quantidade',
-        data: [exclusao, suspensao]
+        label: 'Processos por Local',
+        data: Object.values(locais)
       }]
     }
   });
