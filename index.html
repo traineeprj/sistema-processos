@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Sistema de Processos</title>
+  <title>Sistema CAEMA</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
@@ -9,8 +9,49 @@
     body {
       margin: 0;
       font-family: Arial;
-      display: flex;
       background: #f4f6f9;
+    }
+
+    /* LOGIN */
+    .login-container {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(120deg, #2c3e50, #3498db);
+    }
+
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      width: 300px;
+      text-align: center;
+    }
+
+    .login-box img {
+      width: 120px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* SISTEMA */
+    .container {
+      display: flex;
     }
 
     .sidebar {
@@ -21,16 +62,12 @@
       padding: 20px;
     }
 
-    .sidebar h2 {
-      margin-bottom: 30px;
-    }
-
     .sidebar button {
       width: 100%;
       margin-top: 10px;
       padding: 10px;
-      border: none;
       background: #34495e;
+      border: none;
       color: white;
       cursor: pointer;
     }
@@ -40,32 +77,17 @@
       padding: 20px;
     }
 
-    .cards {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
     .card {
-      flex: 1;
       background: white;
       padding: 20px;
+      margin-bottom: 20px;
       border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    input, select {
-      padding: 8px;
-      margin: 5px;
-      width: 200px;
     }
 
     table {
       width: 100%;
-      border-collapse: collapse;
       background: white;
-      margin-top: 20px;
+      border-collapse: collapse;
     }
 
     th {
@@ -78,193 +100,179 @@
       padding: 8px;
       border-bottom: 1px solid #ddd;
     }
-
-    iframe {
-      width: 100%;
-      height: 600px;
-      border: none;
-    }
   </style>
 </head>
 
 <body>
 
-<div class="sidebar">
-  <h2>📊 Sistema</h2>
-  <button onclick="mostrarTela('dashboard')">Dashboard</button>
-  <button onclick="mostrarTela('tabela')">Processos</button>
+<!-- LOGIN -->
+<div id="login" class="login-container">
+  <div class="login-box">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Logo_CAEMA.png">
+    <h2>Login</h2>
+
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="senha" placeholder="Senha">
+
+    <button onclick="login()">Entrar</button>
+    <p id="erro" style="color:red;"></p>
+  </div>
 </div>
 
-<div class="content">
+<!-- SISTEMA -->
+<div id="sistema" style="display:none;">
+  <div class="container">
 
-  <!-- DASHBOARD (LOOKER) -->
-  <div id="dashboard">
-    <h1>Dashboard</h1>
-
-    <iframe src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"></iframe>
-  </div>
-
-  <!-- PROCESSOS -->
-  <div id="tabela" style="display:none;">
-    <h1>Processos</h1>
-
-    <div class="cards">
-      <div class="card">
-        <h3>Total</h3>
-        <h2 id="total">0</h2>
-      </div>
-
-      <div class="card">
-        <h3>Valor Total</h3>
-        <h2 id="valorTotal">R$ 0</h2>
-      </div>
+    <div class="sidebar">
+      <h2>📊 Sistema</h2>
+      <button onclick="mostrar('dashboard')">Dashboard</button>
+      <button onclick="mostrar('processos')">Processos</button>
+      <button onclick="logout()">Sair</button>
     </div>
 
-    <!-- FILTROS -->
-    <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+    <div class="content">
 
-    <select id="filtroAno" onchange="filtrar()">
-      <option value="">Ano</option>
-    </select>
+      <!-- DASHBOARD -->
+      <div id="dashboard">
+        <h1>Dashboard</h1>
 
-    <select id="filtroDiretoria" onchange="filtrar()">
-      <option value="">Diretoria</option>
-    </select>
+        <iframe width="100%" height="600"
+          src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"
+          frameborder="0" style="border:0" allowfullscreen>
+        </iframe>
+      </div>
 
-    <select id="filtroLocal" onchange="filtrar()">
-      <option value="">Local</option>
-    </select>
+      <!-- PROCESSOS -->
+      <div id="processos" style="display:none;">
+        <h1>Processos</h1>
 
-    <!-- TABELA -->
-    <table>
-      <thead>
-        <tr>
-          <th>Processo</th>
-          <th>Local</th>
-          <th>Objeto</th>
-          <th>Valor</th>
-          <th>Diretoria</th>
-          <th>Ano</th>
-        </tr>
-      </thead>
-      <tbody id="lista"></tbody>
-    </table>
+        <div class="card">
+          <h3>Total: <span id="total">0</span></h3>
+          <h3>Valor Total: R$ <span id="valor">0</span></h3>
+        </div>
 
+        <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+
+        <table>
+          <thead>
+            <tr>
+              <th>Processo</th>
+              <th>Local</th>
+              <th>Objeto</th>
+              <th>Valor</th>
+              <th>Diretoria</th>
+              <th>Ano</th>
+            </tr>
+          </thead>
+          <tbody id="lista"></tbody>
+        </table>
+      </div>
+
+    </div>
   </div>
-
 </div>
 
 <script>
-const supabaseClient = supabase.createClient(
+const supabase = window.supabase.createClient(
   "https://ewibndqllbxfduyzvkpl.supabase.co",
   "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
 );
 
 let dados = [];
 
-// TROCA DE TELA
-function mostrarTela(tela) {
-  document.getElementById("dashboard").style.display = "none";
-  document.getElementById("tabela").style.display = "none";
+// LOGIN
+async function login() {
+  const email = email.value;
+  const senha = document.getElementById("senha").value;
 
-  document.getElementById(tela).style.display = "block";
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password: senha
+  });
+
+  if (error) {
+    document.getElementById("erro").innerText = "Erro no login";
+    return;
+  }
+
+  iniciarSistema();
+}
+
+// INICIAR
+async function iniciarSistema() {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("sistema").style.display = "block";
+
+  carregarDados();
+}
+
+// LOGOUT
+async function logout() {
+  await supabase.auth.signOut();
+  location.reload();
 }
 
 // CARREGAR DADOS
 async function carregarDados() {
-  const { data, error } = await supabaseClient
-    .from('processos')
-    .select('*');
+  const { data, error } = await supabase
+    .from("processos")
+    .select("*");
 
   if (error) {
-    console.log("Erro:", error);
+    alert("Erro ao carregar dados");
     return;
   }
 
-  console.log(data);
-
   dados = data;
-  preencherFiltros();
-  atualizarTela(dados);
+  renderizar(data);
 }
 
-// PREENCHER FILTROS
-function preencherFiltros() {
-  const anos = [...new Set(dados.map(d => d.ANO))];
-  const diretorias = [...new Set(dados.map(d => d.DIRETORIA))];
-  const locais = [...new Set(dados.map(d => d.LOCAL))];
-
-  anos.forEach(a => {
-    filtroAno.innerHTML += `<option>${a}</option>`;
-  });
-
-  diretorias.forEach(d => {
-    filtroDiretoria.innerHTML += `<option>${d}</option>`;
-  });
-
-  locais.forEach(l => {
-    filtroLocal.innerHTML += `<option>${l}</option>`;
-  });
-}
-
-// ATUALIZAR TELA
-function atualizarTela(lista) {
+// RENDER
+function renderizar(lista) {
   document.getElementById("total").innerText = lista.length;
 
-  let totalValor = 0;
-
-  lista.forEach(d => {
-    let valor = d.VALOR_DA_CAUSA || 0;
-
-    valor = valor.toString()
-      .replace("R$", "")
-      .replace(/\./g, "")
-      .replace(",", ".");
-
-    totalValor += parseFloat(valor) || 0;
-  });
-
-  document.getElementById("valorTotal").innerText =
-    totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  let soma = 0;
 
   const tabela = document.getElementById("lista");
   tabela.innerHTML = "";
 
-  lista.forEach(d => {
+  lista.forEach(p => {
+    const valor = parseFloat((p.VALOR_DA_CAUSA || "0").replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+    soma += valor;
+
     tabela.innerHTML += `
       <tr>
-        <td>${d.PROCESSO || ""}</td>
-        <td>${d.LOCAL || ""}</td>
-        <td>${d.OBJETO_DA_ACAO || ""}</td>
-        <td>${d.VALOR_DA_CAUSA || ""}</td>
-        <td>${d.DIRETORIA || ""}</td>
-        <td>${d.ANO || ""}</td>
+        <td>${p.PROCESSO || ""}</td>
+        <td>${p.LOCAL || ""}</td>
+        <td>${p.OBJETO_DA_ACAO || ""}</td>
+        <td>${p.VALOR_DA_CAUSA || ""}</td>
+        <td>${p.DIRETORIA || ""}</td>
+        <td>${p.ANO || ""}</td>
       </tr>
     `;
   });
+
+  document.getElementById("valor").innerText = soma.toFixed(2);
 }
 
-// FILTROS
+// FILTRO
 function filtrar() {
-  const busca = document.getElementById("busca").value.toLowerCase();
-  const ano = filtroAno.value;
-  const diretoria = filtroDiretoria.value;
-  const local = filtroLocal.value;
+  const termo = document.getElementById("busca").value.toLowerCase();
 
-  const filtrado = dados.filter(d => {
-    return (
-      JSON.stringify(d).toLowerCase().includes(busca) &&
-      (ano === "" || d.ANO == ano) &&
-      (diretoria === "" || d.DIRETORIA == diretoria) &&
-      (local === "" || d.LOCAL == local)
-    );
-  });
+  const filtrado = dados.filter(p =>
+    JSON.stringify(p).toLowerCase().includes(termo)
+  );
 
-  atualizarTela(filtrado);
+  renderizar(filtrado);
 }
 
-// INICIAR
-carregarDados();
+// TROCAR TELA
+function mostrar(tela) {
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("processos").style.display = "none";
+
+  document.getElementById(tela).style.display = "block";
+}
 </script>
 
 </body>
