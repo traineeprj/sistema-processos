@@ -9,16 +9,46 @@
     body {
       margin: 0;
       font-family: Arial;
+      display: flex;
       background: #f4f6f9;
     }
 
-    /* LOGIN */
-    .login-container {
+    .sidebar {
+      width: 220px;
+      background: #2c3e50;
+      color: white;
+      height: 100vh;
+      padding: 20px;
+      display: none;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+    }
+
+    .sidebar button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: none;
+      background: #34495e;
+      color: white;
+      cursor: pointer;
+    }
+
+    .content {
+      flex: 1;
+      padding: 20px;
+    }
+
+    /* LOGIN BONITO */
+    #login {
+      width: 100%;
       height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      background: linear-gradient(120deg, #2c3e50, #3498db);
+      background: linear-gradient(135deg, #2c3e50, #3498db);
     }
 
     .login-box {
@@ -34,71 +64,25 @@
       margin-bottom: 20px;
     }
 
-    input {
+    .login-box input {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
     }
 
-    button {
+    .login-box button {
       width: 100%;
       padding: 10px;
       background: #3498db;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    /* SISTEMA */
-    .container {
-      display: flex;
-    }
-
-    .sidebar {
-      width: 220px;
-      background: #2c3e50;
-      color: white;
-      height: 100vh;
-      padding: 20px;
-    }
-
-    .sidebar button {
-      width: 100%;
-      margin-top: 10px;
-      padding: 10px;
-      background: #34495e;
       border: none;
       color: white;
       cursor: pointer;
     }
 
-    .content {
-      flex: 1;
-      padding: 20px;
-    }
-
-    .card {
-      background: white;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 10px;
-    }
-
-    table {
+    iframe {
       width: 100%;
-      background: white;
-      border-collapse: collapse;
-    }
-
-    th {
-      background: #2c3e50;
-      color: white;
-      padding: 10px;
-    }
-
-    td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
+      height: 600px;
+      border: none;
     }
   </style>
 </head>
@@ -106,116 +90,115 @@
 <body>
 
 <!-- LOGIN -->
-<div id="login" class="login-container">
+<div id="login">
   <div class="login-box">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Logo_CAEMA.png">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Logo_CAEMA.png/320px-Logo_CAEMA.png">
     <h2>Login</h2>
 
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="senha" placeholder="Senha">
 
-    <button onclick="login()">Entrar</button>
+    <button onclick="fazerLogin()">Entrar</button>
+
     <p id="erro" style="color:red;"></p>
   </div>
 </div>
 
-<!-- SISTEMA -->
-<div id="sistema" style="display:none;">
-  <div class="container">
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <h2>📊 Sistema</h2>
+  <button onclick="mostrarTela('dashboard')">Dashboard</button>
+  <button onclick="mostrarTela('processos')">Processos</button>
+  <button onclick="logout()">Sair</button>
+</div>
 
-    <div class="sidebar">
-      <h2>📊 Sistema</h2>
-      <button onclick="mostrar('dashboard')">Dashboard</button>
-      <button onclick="mostrar('processos')">Processos</button>
-      <button onclick="logout()">Sair</button>
-    </div>
+<!-- CONTEÚDO -->
+<div class="content" id="sistema" style="display:none;">
 
-    <div class="content">
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <h1>Dashboard</h1>
 
-      <!-- DASHBOARD -->
-      <div id="dashboard">
-        <h1>Dashboard</h1>
-
-        <iframe width="100%" height="600"
-          src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"
-          frameborder="0" style="border:0" allowfullscreen>
-        </iframe>
-      </div>
-
-      <!-- PROCESSOS -->
-      <div id="processos" style="display:none;">
-        <h1>Processos</h1>
-
-        <div class="card">
-          <h3>Total: <span id="total">0</span></h3>
-          <h3>Valor Total: R$ <span id="valor">0</span></h3>
-        </div>
-
-        <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
-
-        <table>
-          <thead>
-            <tr>
-              <th>Processo</th>
-              <th>Local</th>
-              <th>Objeto</th>
-              <th>Valor</th>
-              <th>Diretoria</th>
-              <th>Ano</th>
-            </tr>
-          </thead>
-          <tbody id="lista"></tbody>
-        </table>
-      </div>
-
-    </div>
+    <iframe src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"></iframe>
   </div>
+
+  <!-- PROCESSOS -->
+  <div id="processos" style="display:none;">
+    <h1>Processos</h1>
+
+    <h3>Total: <span id="total">0</span></h3>
+
+    <table border="1" width="100%">
+      <thead>
+        <tr>
+          <th>Processo</th>
+          <th>Local</th>
+          <th>Objeto</th>
+          <th>Valor</th>
+          <th>Diretoria</th>
+          <th>Ano</th>
+        </tr>
+      </thead>
+      <tbody id="lista"></tbody>
+    </table>
+  </div>
+
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
+/* ✅ CONFIG SUPABASE (UMA VEZ SÓ!) */
+const supabaseClient = supabase.createClient(
   "https://ewibndqllbxfduyzvkpl.supabase.co",
   "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
 );
 
 let dados = [];
 
-// LOGIN
-async function login() {
-  const email = email.value;
+/* LOGIN */
+async function fazerLogin() {
+  const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
     password: senha
   });
 
   if (error) {
-    document.getElementById("erro").innerText = "Erro no login";
+    document.getElementById("erro").innerText = "Login inválido";
     return;
   }
 
   iniciarSistema();
 }
 
-// INICIAR
-async function iniciarSistema() {
+/* INICIAR SISTEMA */
+function iniciarSistema() {
   document.getElementById("login").style.display = "none";
   document.getElementById("sistema").style.display = "block";
+  document.getElementById("sidebar").style.display = "block";
 
   carregarDados();
 }
 
-// LOGOUT
+/* LOGOUT */
 async function logout() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   location.reload();
 }
 
-// CARREGAR DADOS
+/* TROCAR TELA */
+function mostrarTela(tela) {
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("processos").style.display = "none";
+
+  document.getElementById(tela).style.display = "block";
+}
+
+/* CARREGAR DADOS */
 async function carregarDados() {
-  const { data, error } = await supabase
-    .from("processos")
+  const { data, error } = await supabaseClient
+    .from("relatorio")
     .select("*");
 
   if (error) {
@@ -224,54 +207,30 @@ async function carregarDados() {
   }
 
   dados = data;
-  renderizar(data);
+  renderTabela();
 }
 
-// RENDER
-function renderizar(lista) {
-  document.getElementById("total").innerText = lista.length;
+/* RENDER TABELA */
+function renderTabela() {
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
 
-  let soma = 0;
+  document.getElementById("total").innerText = dados.length;
 
-  const tabela = document.getElementById("lista");
-  tabela.innerHTML = "";
+  dados.forEach(p => {
+    const tr = document.createElement("tr");
 
-  lista.forEach(p => {
-    const valor = parseFloat((p.VALOR_DA_CAUSA || "0").replace(/[^\d,]/g, "").replace(",", ".")) || 0;
-    soma += valor;
-
-    tabela.innerHTML += `
-      <tr>
-        <td>${p.PROCESSO || ""}</td>
-        <td>${p.LOCAL || ""}</td>
-        <td>${p.OBJETO_DA_ACAO || ""}</td>
-        <td>${p.VALOR_DA_CAUSA || ""}</td>
-        <td>${p.DIRETORIA || ""}</td>
-        <td>${p.ANO || ""}</td>
-      </tr>
+    tr.innerHTML = `
+      <td>${p.PROCESSO || ""}</td>
+      <td>${p.LOCAL || ""}</td>
+      <td>${p["OBJETO DA AÇÃO"] || ""}</td>
+      <td>${p["VALOR DA CAUSA"] || ""}</td>
+      <td>${p.DIRETORIA || ""}</td>
+      <td>${p.ANO || ""}</td>
     `;
+
+    lista.appendChild(tr);
   });
-
-  document.getElementById("valor").innerText = soma.toFixed(2);
-}
-
-// FILTRO
-function filtrar() {
-  const termo = document.getElementById("busca").value.toLowerCase();
-
-  const filtrado = dados.filter(p =>
-    JSON.stringify(p).toLowerCase().includes(termo)
-  );
-
-  renderizar(filtrado);
-}
-
-// TROCAR TELA
-function mostrar(tela) {
-  document.getElementById("dashboard").style.display = "none";
-  document.getElementById("processos").style.display = "none";
-
-  document.getElementById(tela).style.display = "block";
 }
 </script>
 
