@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Sistema CAEMA</title>
+  <title>Sistema</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <style>
@@ -18,13 +19,12 @@
       color: white;
       height: 100vh;
       padding: 20px;
-      display: none;
     }
 
     .sidebar button {
       width: 100%;
-      margin-top: 10px;
       padding: 10px;
+      margin-top: 10px;
       border: none;
       background: #34495e;
       color: white;
@@ -34,45 +34,6 @@
     .content {
       flex: 1;
       padding: 20px;
-    }
-
-    /* LOGIN */
-    #login {
-      width: 100%;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #2c3e50, #3498db);
-    }
-
-    .login-box {
-      background: white;
-      padding: 40px;
-      border-radius: 12px;
-      width: 320px;
-      text-align: center;
-    }
-
-    .login-box input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-    }
-
-    .login-box button {
-      width: 100%;
-      padding: 10px;
-      background: #3498db;
-      border: none;
-      color: white;
-      cursor: pointer;
-    }
-
-    iframe {
-      width: 100%;
-      height: 600px;
-      border: none;
     }
 
     table {
@@ -93,96 +54,42 @@
       border-bottom: 1px solid #ddd;
     }
 
-    .status {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-
-    .loading {
-      color: blue;
-    }
-
-    .erro {
-      color: red;
+    #login {
+      margin: auto;
+      text-align: center;
     }
   </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="login">
-  <div class="login-box">
-    <h2>Login</h2>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="senha" placeholder="Senha">
-    <button onclick="fazerLogin()">Entrar</button>
-    <p id="erroLogin" style="color:red;"></p>
-  </div>
-</div>
-
-<!-- SIDEBAR -->
-<div class="sidebar" id="sidebar">
+<div class="sidebar">
   <h2>📊 Sistema</h2>
-  <button onclick="mostrarTela('dashboard')">Dashboard</button>
+
   <button onclick="carregarRelatorio()">Processos</button>
   <button onclick="carregarLiminar()">Liminar</button>
   <button onclick="logout()">Sair</button>
 </div>
 
-<!-- CONTEÚDO -->
-<div class="content" id="sistema" style="display:none;">
+<div class="content">
 
-  <!-- DASHBOARD -->
-  <div id="dashboard">
-    <h1>Dashboard</h1>
-    <iframe src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"></iframe>
+  <!-- LOGIN -->
+  <div id="login">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email"><br><br>
+    <input type="password" id="senha" placeholder="Senha"><br><br>
+    <button onclick="fazerLogin()">Entrar</button>
+    <p id="erro" style="color:red;"></p>
   </div>
 
-  <!-- PROCESSOS -->
-  <div id="processos" style="display:none;">
-    <h1>Processos</h1>
-
-    <input type="text" id="buscaRelatorio" placeholder="Buscar..." onkeyup="filtrarRelatorio()">
-
-    <p class="status loading" id="statusRelatorio"></p>
-
-    <h3>Total: <span id="totalRelatorio">0</span></h3>
+  <!-- SISTEMA -->
+  <div id="sistema" style="display:none;">
+    <h1 id="titulo">Tabela</h1>
+    <h3>Total: <span id="total">0</span></h3>
 
     <table>
-      <thead>
-        <tr>
-          <th>Processo</th>
-          <th>Local</th>
-          <th>Objeto</th>
-          <th>Valor</th>
-          <th>Diretoria</th>
-          <th>Ano</th>
-        </tr>
-      </thead>
-      <tbody id="listaRelatorio"></tbody>
-    </table>
-  </div>
-
-  <!-- LIMINAR -->
-  <div id="liminar" style="display:none;">
-    <h1>Liminar</h1>
-
-    <p class="status loading" id="statusLiminar"></p>
-
-    <h3>Total: <span id="totalLiminar">0</span></h3>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Processo</th>
-          <th>Liminar</th>
-          <th>Local</th>
-          <th>Setor</th>
-          <th>Mês</th>
-        </tr>
-      </thead>
-      <tbody id="listaLiminar"></tbody>
+      <thead id="thead"></thead>
+      <tbody id="lista"></tbody>
     </table>
   </div>
 
@@ -194,129 +101,125 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
 );
 
-let dadosRelatorio = [];
-
-/* LOGIN */
+// LOGIN
 async function fazerLogin() {
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
+
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email: email.value,
-    password: senha.value
+    email,
+    password: senha
   });
 
   if (error) {
-    erroLogin.innerText = "Login inválido";
+    document.getElementById("erro").innerText = "Login inválido";
     return;
   }
 
-  login.style.display = "none";
-  sistema.style.display = "block";
-  sidebar.style.display = "block";
+  verificarUsuario();
 }
 
-/* LOGOUT */
+// VERIFICAR LOGIN
+async function verificarUsuario() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("sistema").style.display = "block";
+  }
+}
+
+// LOGOUT
 async function logout() {
   await supabaseClient.auth.signOut();
   location.reload();
 }
 
-/* TROCAR TELA */
-function mostrarTela(tela) {
-  dashboard.style.display = "none";
-  processos.style.display = "none";
-  liminar.style.display = "none";
+verificarUsuario();
 
-  document.getElementById(tela).style.display = "block";
-}
 
-/* RELATORIO */
+// ==========================
+// RELATÓRIO
+// ==========================
 async function carregarRelatorio() {
-  mostrarTela("processos");
+  document.getElementById("titulo").innerText = "Processos";
 
-  statusRelatorio.innerText = "Carregando...";
-  statusRelatorio.className = "status loading";
+  const { data } = await supabaseClient
+    .from('Relatorio')
+    .select('*');
 
-  const { data, error } = await supabaseClient
-    .from("relatorio")
-    .select("*");
+  document.getElementById("total").innerText = data.length;
 
-  console.log(data, error);
+  document.getElementById("thead").innerHTML = `
+    <tr>
+      <th>Data</th>
+      <th>Ano</th>
+      <th>Processo</th>
+      <th>Local</th>
+      <th>Objeto</th>
+      <th>Valor</th>
+      <th>Diretoria</th>
+    </tr>
+  `;
 
-  if (error) {
-    statusRelatorio.innerText = "Erro ao carregar dados!";
-    statusRelatorio.className = "status erro";
-    return;
-  }
-
-  statusRelatorio.innerText = "";
-  dadosRelatorio = data;
-
-  atualizarTabelaRelatorio(data);
-}
-
-/* FILTRO */
-function filtrarRelatorio() {
-  const busca = buscaRelatorio.value.toLowerCase();
-
-  const filtrados = dadosRelatorio.filter(p =>
-    JSON.stringify(p).toLowerCase().includes(busca)
-  );
-
-  atualizarTabelaRelatorio(filtrados);
-}
-
-/* ATUALIZA TABELA */
-function atualizarTabelaRelatorio(data) {
-  totalRelatorio.innerText = data.length;
-  listaRelatorio.innerHTML = "";
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
 
   data.forEach(p => {
-    listaRelatorio.innerHTML += `
-      <tr>
-        <td>${p.processo || ""}</td>
-        <td>${p.local || ""}</td>
-        <td>${p.objeto_da_acao || ""}</td>
-        <td>${p.valor_da_causa || ""}</td>
-        <td>${p.diretoria || ""}</td>
-        <td>${p.ano || ""}</td>
-      </tr>
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${p.DATA || ""}</td>
+      <td>${p.ANO || ""}</td>
+      <td>${p.PROCESSO || ""}</td>
+      <td>${p.LOCAL || ""}</td>
+      <td>${p["OBJETO DA ACAO"] || ""}</td>
+      <td>${p["VALOR DA CAUSA"] || ""}</td>
+      <td>${p.DIRETORIA || ""}</td>
     `;
+
+    lista.appendChild(tr);
   });
 }
 
-/* LIMINAR */
+
+// ==========================
+// LIMINAR
+// ==========================
 async function carregarLiminar() {
-  mostrarTela("liminar");
+  document.getElementById("titulo").innerText = "Liminar";
 
-  statusLiminar.innerText = "Carregando...";
-  statusLiminar.className = "status loading";
+  const { data } = await supabaseClient
+    .from('Liminar')
+    .select('*');
 
-  const { data, error } = await supabaseClient
-    .from("liminar")
-    .select("*");
+  document.getElementById("total").innerText = data.length;
 
-  console.log(data, error);
+  document.getElementById("thead").innerHTML = `
+    <tr>
+      <th>Processo</th>
+      <th>Liminar</th>
+      <th>SEI</th>
+      <th>Setor</th>
+      <th>Mês</th>
+    </tr>
+  `;
 
-  if (error) {
-    statusLiminar.innerText = "Erro ao carregar dados!";
-    statusLiminar.className = "status erro";
-    return;
-  }
-
-  statusLiminar.innerText = "";
-
-  totalLiminar.innerText = data.length;
-  listaLiminar.innerHTML = "";
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
 
   data.forEach(p => {
-    listaLiminar.innerHTML += `
-      <tr>
-        <td>${p.processo || ""}</td>
-        <td>${p.liminar || ""}</td>
-        <td>${p.local || ""}</td>
-        <td>${p.setor || ""}</td>
-        <td>${p.mes || ""}</td>
-      </tr>
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${p.PROCESSO || ""}</td>
+      <td>${p.LIMINAR || ""}</td>
+      <td>${p.SEI || ""}</td>
+      <td>${p.SETOR || ""}</td>
+      <td>${p.MES || ""}</td>
     `;
+
+    lista.appendChild(tr);
   });
 }
 </script>
