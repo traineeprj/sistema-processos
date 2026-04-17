@@ -22,10 +22,6 @@
       display: none;
     }
 
-    .sidebar h2 {
-      margin-bottom: 30px;
-    }
-
     .sidebar button {
       width: 100%;
       margin-top: 10px;
@@ -41,7 +37,7 @@
       padding: 20px;
     }
 
-    /* LOGIN BONITO */
+    /* LOGIN */
     #login {
       width: 100%;
       height: 100vh;
@@ -55,7 +51,7 @@
       background: white;
       padding: 40px;
       border-radius: 12px;
-      width: 300px;
+      width: 320px;
       text-align: center;
     }
 
@@ -84,6 +80,24 @@
       height: 600px;
       border: none;
     }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      margin-top: 20px;
+    }
+
+    th {
+      background: #2c3e50;
+      color: white;
+      padding: 10px;
+    }
+
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
   </style>
 </head>
 
@@ -99,7 +113,6 @@
     <input type="password" id="senha" placeholder="Senha">
 
     <button onclick="fazerLogin()">Entrar</button>
-
     <p id="erro" style="color:red;"></p>
   </div>
 </div>
@@ -127,8 +140,9 @@
     <h1>Processos</h1>
 
     <h3>Total: <span id="total">0</span></h3>
+    <h3>Valor Total: R$ <span id="valorTotal">0</span></h3>
 
-    <table border="1" width="100%">
+    <table>
       <thead>
         <tr>
           <th>Processo</th>
@@ -146,7 +160,6 @@
 </div>
 
 <script>
-/* ✅ CONFIG SUPABASE (UMA VEZ SÓ!) */
 const supabaseClient = supabase.createClient(
   "https://ewibndqllbxfduyzvkpl.supabase.co",
   "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
@@ -172,7 +185,7 @@ async function fazerLogin() {
   iniciarSistema();
 }
 
-/* INICIAR SISTEMA */
+/* INICIAR */
 function iniciarSistema() {
   document.getElementById("login").style.display = "none";
   document.getElementById("sistema").style.display = "block";
@@ -198,8 +211,10 @@ function mostrarTela(tela) {
 /* CARREGAR DADOS */
 async function carregarDados() {
   const { data, error } = await supabaseClient
-    .from("relatorio")
+    .from("processos")
     .select("*");
+
+  console.log(data);
 
   if (error) {
     alert("Erro ao carregar dados");
@@ -210,27 +225,46 @@ async function carregarDados() {
   renderTabela();
 }
 
-/* RENDER TABELA */
+/* FORMATAR VALOR */
+function parseValor(valor) {
+  if (!valor) return 0;
+
+  return parseFloat(
+    valor
+      .replace("R$", "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
+}
+
+/* RENDER */
 function renderTabela() {
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
 
   document.getElementById("total").innerText = dados.length;
 
+  let soma = 0;
+
   dados.forEach(p => {
+    soma += parseValor(p.VALOR_DA_CAUSA);
+
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
       <td>${p.PROCESSO || ""}</td>
       <td>${p.LOCAL || ""}</td>
-      <td>${p["OBJETO DA AÇÃO"] || ""}</td>
-      <td>${p["VALOR DA CAUSA"] || ""}</td>
+      <td>${p.OBJETO_DA_ACAO || ""}</td>
+      <td>${p.VALOR_DA_CAUSA || ""}</td>
       <td>${p.DIRETORIA || ""}</td>
       <td>${p.ANO || ""}</td>
     `;
 
     lista.appendChild(tr);
   });
+
+  document.getElementById("valorTotal").innerText =
+    soma.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 }
 </script>
 
