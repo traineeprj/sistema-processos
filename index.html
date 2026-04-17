@@ -2,7 +2,6 @@
 <html>
 <head>
   <title>Sistema CAEMA</title>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <style>
@@ -55,11 +54,6 @@
       text-align: center;
     }
 
-    .login-box img {
-      width: 120px;
-      margin-bottom: 20px;
-    }
-
     .login-box input {
       width: 100%;
       padding: 10px;
@@ -98,6 +92,19 @@
       padding: 8px;
       border-bottom: 1px solid #ddd;
     }
+
+    .status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .loading {
+      color: blue;
+    }
+
+    .erro {
+      color: red;
+    }
   </style>
 </head>
 
@@ -106,14 +113,11 @@
 <!-- LOGIN -->
 <div id="login">
   <div class="login-box">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Logo_CAEMA.png/320px-Logo_CAEMA.png">
     <h2>Login</h2>
-
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="senha" placeholder="Senha">
-
     <button onclick="fazerLogin()">Entrar</button>
-    <p id="erro" style="color:red;"></p>
+    <p id="erroLogin" style="color:red;"></p>
   </div>
 </div>
 
@@ -135,9 +139,13 @@
     <iframe src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"></iframe>
   </div>
 
-  <!-- PROCESSOS (RELATORIO) -->
+  <!-- PROCESSOS -->
   <div id="processos" style="display:none;">
     <h1>Processos</h1>
+
+    <input type="text" id="buscaRelatorio" placeholder="Buscar..." onkeyup="filtrarRelatorio()">
+
+    <p class="status loading" id="statusRelatorio"></p>
 
     <h3>Total: <span id="totalRelatorio">0</span></h3>
 
@@ -156,9 +164,11 @@
     </table>
   </div>
 
-  <!-- LIMINAR (PROCESSOS) -->
+  <!-- LIMINAR -->
   <div id="liminar" style="display:none;">
     <h1>Liminar</h1>
+
+    <p class="status loading" id="statusLiminar"></p>
 
     <h3>Total: <span id="totalLiminar">0</span></h3>
 
@@ -181,8 +191,10 @@
 <script>
 const supabaseClient = supabase.createClient(
   "https://ewibndqllbxfduyzvkpl.supabase.co",
-  "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
+  "SUA_CHAVE_AQUI"
 );
+
+let dadosRelatorio = [];
 
 /* LOGIN */
 async function fazerLogin() {
@@ -192,7 +204,7 @@ async function fazerLogin() {
   });
 
   if (error) {
-    erro.innerText = "Login inválido";
+    erroLogin.innerText = "Login inválido";
     return;
   }
 
@@ -216,52 +228,93 @@ function mostrarTela(tela) {
   document.getElementById(tela).style.display = "block";
 }
 
-/* PROCESSOS → TABELA RELATORIO */
+/* RELATORIO */
 async function carregarRelatorio() {
   mostrarTela("processos");
 
-  const { data } = await supabaseClient
+  statusRelatorio.innerText = "Carregando...";
+  statusRelatorio.className = "status loading";
+
+  const { data, error } = await supabaseClient
     .from("relatorio")
     .select("*");
 
-  totalRelatorio.innerText = data.length;
+  console.log(data, error);
 
+  if (error) {
+    statusRelatorio.innerText = "Erro ao carregar dados!";
+    statusRelatorio.className = "status erro";
+    return;
+  }
+
+  statusRelatorio.innerText = "";
+  dadosRelatorio = data;
+
+  atualizarTabelaRelatorio(data);
+}
+
+/* FILTRO */
+function filtrarRelatorio() {
+  const busca = buscaRelatorio.value.toLowerCase();
+
+  const filtrados = dadosRelatorio.filter(p =>
+    JSON.stringify(p).toLowerCase().includes(busca)
+  );
+
+  atualizarTabelaRelatorio(filtrados);
+}
+
+/* ATUALIZA TABELA */
+function atualizarTabelaRelatorio(data) {
+  totalRelatorio.innerText = data.length;
   listaRelatorio.innerHTML = "";
 
   data.forEach(p => {
     listaRelatorio.innerHTML += `
       <tr>
-        <td>${p.PROCESSO || ""}</td>
-        <td>${p.LOCAL || ""}</td>
-        <td>${p.OBJETO_DA_ACAO || ""}</td>
-        <td>${p.VALOR_DA_CAUSA || ""}</td>
-        <td>${p.DIRETORIA || ""}</td>
-        <td>${p.ANO || ""}</td>
+        <td>${p.processo || ""}</td>
+        <td>${p.local || ""}</td>
+        <td>${p.objeto_da_acao || ""}</td>
+        <td>${p.valor_da_causa || ""}</td>
+        <td>${p.diretoria || ""}</td>
+        <td>${p.ano || ""}</td>
       </tr>
     `;
   });
 }
 
-/* LIMINAR → TABELA PROCESSOS */
+/* LIMINAR */
 async function carregarLiminar() {
   mostrarTela("liminar");
 
-  const { data } = await supabaseClient
-    .from("processos")
+  statusLiminar.innerText = "Carregando...";
+  statusLiminar.className = "status loading";
+
+  const { data, error } = await supabaseClient
+    .from("liminar")
     .select("*");
 
-  totalLiminar.innerText = data.length;
+  console.log(data, error);
 
+  if (error) {
+    statusLiminar.innerText = "Erro ao carregar dados!";
+    statusLiminar.className = "status erro";
+    return;
+  }
+
+  statusLiminar.innerText = "";
+
+  totalLiminar.innerText = data.length;
   listaLiminar.innerHTML = "";
 
   data.forEach(p => {
     listaLiminar.innerHTML += `
       <tr>
-        <td>${p.PROCESSO || ""}</td>
-        <td>${p.LIMINAR || ""}</td>
-        <td>${p.LOCAL || ""}</td>
-        <td>${p.SETOR || ""}</td>
-        <td>${p.MES || ""}</td>
+        <td>${p.processo || ""}</td>
+        <td>${p.liminar || ""}</td>
+        <td>${p.local || ""}</td>
+        <td>${p.setor || ""}</td>
+        <td>${p.mes || ""}</td>
       </tr>
     `;
   });
