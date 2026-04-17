@@ -66,6 +66,7 @@
 <div class="sidebar">
   <h2>📊 Sistema</h2>
 
+  <button onclick="carregarDashboard()">Dashboard</button>
   <button onclick="carregarRelatorio()">Processos</button>
   <button onclick="carregarLiminar()">Liminar</button>
   <button onclick="logout()">Sair</button>
@@ -84,7 +85,7 @@
 
   <!-- SISTEMA -->
   <div id="sistema" style="display:none;">
-    <h1 id="titulo">Tabela</h1>
+    <h1 id="titulo">Dashboard</h1>
     <h3>Total: <span id="total">0</span></h3>
 
     <table>
@@ -126,6 +127,7 @@ async function verificarUsuario() {
   if (data.session) {
     document.getElementById("login").style.display = "none";
     document.getElementById("sistema").style.display = "block";
+    carregarDashboard();
   }
 }
 
@@ -138,9 +140,22 @@ async function logout() {
 verificarUsuario();
 
 
-// ==========================
-// RELATÓRIO
-// ==========================
+// ================= DASHBOARD =================
+async function carregarDashboard() {
+  document.getElementById("titulo").innerText = "Dashboard";
+
+  const { data } = await supabaseClient
+    .from('Relatorio')
+    .select('*');
+
+  document.getElementById("total").innerText = data ? data.length : 0;
+
+  document.getElementById("thead").innerHTML = "";
+  document.getElementById("lista").innerHTML = "";
+}
+
+
+// ================= RELATÓRIO =================
 async function carregarRelatorio() {
   document.getElementById("titulo").innerText = "Processos";
 
@@ -148,7 +163,7 @@ async function carregarRelatorio() {
     .from('Relatorio')
     .select('*');
 
-  document.getElementById("total").innerText = data.length;
+  document.getElementById("total").innerText = data ? data.length : 0;
 
   document.getElementById("thead").innerHTML = `
     <tr>
@@ -164,6 +179,8 @@ async function carregarRelatorio() {
 
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
+
+  if (!data) return;
 
   data.forEach(p => {
     const tr = document.createElement("tr");
@@ -183,9 +200,7 @@ async function carregarRelatorio() {
 }
 
 
-// ==========================
-// LIMINAR
-// ==========================
+// ================= LIMINAR =================
 async function carregarLiminar() {
   document.getElementById("titulo").innerText = "Liminar";
 
@@ -193,7 +208,7 @@ async function carregarLiminar() {
     .from('Liminar')
     .select('*');
 
-  document.getElementById("total").innerText = data.length;
+  document.getElementById("total").innerText = data ? data.length : 0;
 
   document.getElementById("thead").innerHTML = `
     <tr>
@@ -207,6 +222,8 @@ async function carregarLiminar() {
 
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
+
+  if (!data) return;
 
   data.forEach(p => {
     const tr = document.createElement("tr");
