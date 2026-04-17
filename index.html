@@ -121,7 +121,8 @@
 <div class="sidebar" id="sidebar">
   <h2>📊 Sistema</h2>
   <button onclick="mostrarTela('dashboard')">Dashboard</button>
-  <button onclick="mostrarTela('processos')">Processos</button>
+  <button onclick="carregarRelatorio()">Processos</button>
+  <button onclick="carregarLiminar()">Liminar</button>
   <button onclick="logout()">Sair</button>
 </div>
 
@@ -131,16 +132,14 @@
   <!-- DASHBOARD -->
   <div id="dashboard">
     <h1>Dashboard</h1>
-
     <iframe src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF"></iframe>
   </div>
 
-  <!-- PROCESSOS -->
+  <!-- PROCESSOS (RELATORIO) -->
   <div id="processos" style="display:none;">
     <h1>Processos</h1>
 
-    <h3>Total: <span id="total">0</span></h3>
-    <h3>Valor Total: R$ <span id="valorTotal">0</span></h3>
+    <h3>Total: <span id="totalRelatorio">0</span></h3>
 
     <table>
       <thead>
@@ -153,7 +152,27 @@
           <th>Ano</th>
         </tr>
       </thead>
-      <tbody id="lista"></tbody>
+      <tbody id="listaRelatorio"></tbody>
+    </table>
+  </div>
+
+  <!-- LIMINAR (PROCESSOS) -->
+  <div id="liminar" style="display:none;">
+    <h1>Liminar</h1>
+
+    <h3>Total: <span id="totalLiminar">0</span></h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Processo</th>
+          <th>Liminar</th>
+          <th>Local</th>
+          <th>Setor</th>
+          <th>Mês</th>
+        </tr>
+      </thead>
+      <tbody id="listaLiminar"></tbody>
     </table>
   </div>
 
@@ -165,33 +184,21 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM"
 );
 
-let dados = [];
-
 /* LOGIN */
 async function fazerLogin() {
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
-
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: senha
+    email: email.value,
+    password: senha.value
   });
 
   if (error) {
-    document.getElementById("erro").innerText = "Login inválido";
+    erro.innerText = "Login inválido";
     return;
   }
 
-  iniciarSistema();
-}
-
-/* INICIAR */
-function iniciarSistema() {
-  document.getElementById("login").style.display = "none";
-  document.getElementById("sistema").style.display = "block";
-  document.getElementById("sidebar").style.display = "block";
-
-  carregarDados();
+  login.style.display = "none";
+  sistema.style.display = "block";
+  sidebar.style.display = "block";
 }
 
 /* LOGOUT */
@@ -202,69 +209,62 @@ async function logout() {
 
 /* TROCAR TELA */
 function mostrarTela(tela) {
-  document.getElementById("dashboard").style.display = "none";
-  document.getElementById("processos").style.display = "none";
+  dashboard.style.display = "none";
+  processos.style.display = "none";
+  liminar.style.display = "none";
 
   document.getElementById(tela).style.display = "block";
 }
 
-/* CARREGAR DADOS */
-async function carregarDados() {
-  const { data, error } = await supabaseClient
+/* PROCESSOS → TABELA RELATORIO */
+async function carregarRelatorio() {
+  mostrarTela("processos");
+
+  const { data } = await supabaseClient
+    .from("relatorio")
+    .select("*");
+
+  totalRelatorio.innerText = data.length;
+
+  listaRelatorio.innerHTML = "";
+
+  data.forEach(p => {
+    listaRelatorio.innerHTML += `
+      <tr>
+        <td>${p.PROCESSO || ""}</td>
+        <td>${p.LOCAL || ""}</td>
+        <td>${p.OBJETO_DA_ACAO || ""}</td>
+        <td>${p.VALOR_DA_CAUSA || ""}</td>
+        <td>${p.DIRETORIA || ""}</td>
+        <td>${p.ANO || ""}</td>
+      </tr>
+    `;
+  });
+}
+
+/* LIMINAR → TABELA PROCESSOS */
+async function carregarLiminar() {
+  mostrarTela("liminar");
+
+  const { data } = await supabaseClient
     .from("processos")
     .select("*");
 
-  console.log(data);
+  totalLiminar.innerText = data.length;
 
-  if (error) {
-    alert("Erro ao carregar dados");
-    return;
-  }
+  listaLiminar.innerHTML = "";
 
-  dados = data;
-  renderTabela();
-}
-
-/* FORMATAR VALOR */
-function parseValor(valor) {
-  if (!valor) return 0;
-
-  return parseFloat(
-    valor
-      .replace("R$", "")
-      .replace(/\./g, "")
-      .replace(",", ".")
-  ) || 0;
-}
-
-/* RENDER */
-function renderTabela() {
-  const lista = document.getElementById("lista");
-  lista.innerHTML = "";
-
-  document.getElementById("total").innerText = dados.length;
-
-  let soma = 0;
-
-  dados.forEach(p => {
-    soma += parseValor(p.VALOR_DA_CAUSA);
-
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${p.PROCESSO || ""}</td>
-      <td>${p.LOCAL || ""}</td>
-      <td>${p.OBJETO_DA_ACAO || ""}</td>
-      <td>${p.VALOR_DA_CAUSA || ""}</td>
-      <td>${p.DIRETORIA || ""}</td>
-      <td>${p.ANO || ""}</td>
+  data.forEach(p => {
+    listaLiminar.innerHTML += `
+      <tr>
+        <td>${p.PROCESSO || ""}</td>
+        <td>${p.LIMINAR || ""}</td>
+        <td>${p.LOCAL || ""}</td>
+        <td>${p.SETOR || ""}</td>
+        <td>${p.MES || ""}</td>
+      </tr>
     `;
-
-    lista.appendChild(tr);
   });
-
-  document.getElementById("valorTotal").innerText =
-    soma.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 }
 </script>
 
