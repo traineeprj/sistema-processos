@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      min-height: 100vh;
+      background: #f4f6f9;
+      color: #1f2933;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: #2c3e50;
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-top: 0;
+    }
+
+    .sidebar button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      background: #34495e;
+      color: #ffffff;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .sidebar button:hover,
+    .sidebar button:focus-visible {
+      background: #3d566e;
+      outline: none;
+    }
+
+    .content {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+    }
+
+    .panel {
+      width: 100%;
+    }
+
+    .auth-panel {
+      max-width: 360px;
+      margin: auto;
+      text-align: center;
+      background: #ffffff;
+      padding: 32px 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+    }
+
+    .auth-panel form {
+      display: grid;
+      gap: 12px;
+    }
+
+    input,
+    .auth-panel button {
+      width: 100%;
+      padding: 10px;
+      font: inherit;
+    }
+
+    .auth-panel button {
+      border: none;
+      background: #2c3e50;
+      color: #ffffff;
+      cursor: pointer;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .summary {
+      text-align: right;
+    }
+
+    .message {
+      min-height: 20px;
+      margin: 8px 0 0;
+    }
+
+    .error {
+      color: #c0392b;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+      margin-top: 20px;
+    }
+
+    th {
+      background: #2c3e50;
+      color: #ffffff;
+      padding: 10px;
+      text-align: left;
+    }
+
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #dddddd;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-height: auto;
+      }
+
+      .header {
+        flex-direction: column;
+      }
+
+      .summary {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar hidden" id="sidebar" aria-label="Menu principal">
+    <h2>Sistema</h2>
+    <button type="button" data-view="dashboard">Dashboard</button>
+    <button type="button" data-view="relatorio">Processos</button>
+    <button type="button" data-view="liminar">Liminar</button>
+    <button type="button" id="logoutButton">Sair</button>
+  </aside>
+
+  <main class="content">
+    <section id="login" class="panel auth-panel">
+      <h2>Login</h2>
+      <form id="loginForm" novalidate>
+        <input type="email" id="email" placeholder="Email" autocomplete="email" required>
+        <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" required>
+        <button type="submit" id="loginButton">Entrar</button>
+      </form>
+      <p id="erro" class="message error" role="alert"></p>
+    </section>
+
+    <section id="sistema" class="panel hidden">
+      <div class="header">
+        <h1 id="titulo">Dashboard</h1>
+        <div class="summary">
+          <h3>Total: <span id="total">0</span></h3>
+          <p id="status" class="message"></p>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead id="thead"></thead>
+          <tbody id="lista"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://ewibndqllbxfduyzvkpl.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM";
+
+    const DOM = {
+      login: document.getElementById("login"),
+      sistema: document.getElementById("sistema"),
+      sidebar: document.getElementById("sidebar"),
+      email: document.getElementById("email"),
+      senha: document.getElementById("senha"),
+      erro: document.getElementById("erro"),
+      status: document.getElementById("status"),
+      titulo: document.getElementById("titulo"),
+      total: document.getElementById("total"),
+      thead: document.getElementById("thead"),
+      lista: document.getElementById("lista"),
+      loginForm: document.getElementById("loginForm"),
+      loginButton: document.getElementById("loginButton"),
+      logoutButton: document.getElementById("logoutButton"),
+      navButtons: document.querySelectorAll("[data-view]")
+    };
+
+    const views = {
+      dashboard: {
+        title: "Dashboard",
+        table: "Relatorio",
+        columns: []
+      },
+      relatorio: {
+        title: "Processos",
+        table: "Relatorio",
+        columns: [
+          { key: "DATA", label: "Data" },
+          { key: "ANO", label: "Ano" },
+          { key: "PROCESSO", label: "Processo" },
+          { key: "LOCAL", label: "Local" },
+          { key: "OBJETO DA ACAO", label: "Objeto" },
+          { key: "VALOR DA CAUSA", label: "Valor" },
+          { key: "DIRETORIA", label: "Diretoria" }
+        ]
+      },
+      liminar: {
+        title: "Liminar",
+        table: "Liminar",
+        columns: [
+          { key: "PROCESSO", label: "Processo" },
+          { key: "LIMINAR", label: "Liminar" },
+          { key: "SEI", label: "SEI" },
+          { key: "SETOR", label: "Setor" },
+          { key: "MES", label: "Mes" }
+        ]
+      }
+    };
+
+    let supabaseClient = null;
+
+    function setMessage(element, message, isError = false) {
+      element.textContent = message;
+      element.classList.toggle("error", isError);
+    }
+
+    function showLoggedOutState() {
+      DOM.login.classList.remove("hidden");
+      DOM.sistema.classList.add("hidden");
+      DOM.sidebar.classList.add("hidden");
+    }
+
+    function showLoggedInState() {
+      DOM.login.classList.add("hidden");
+      DOM.sistema.classList.remove("hidden");
+      DOM.sidebar.classList.remove("hidden");
+    }
+
+    function clearTable() {
+      DOM.thead.replaceChildren();
+      DOM.lista.replaceChildren();
+    }
+
+    function renderTable(columns, rows) {
+      clearTable();
+
+      if (!columns.length) {
+        return;
+      }
+
+      const headerRow = document.createElement("tr");
+
+      columns.forEach(({ label }) => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        headerRow.appendChild(th);
+      });
+
+      DOM.thead.appendChild(headerRow);
+
+      rows.forEach((row) => {
+        const tr = document.createElement("tr");
+
+        columns.forEach(({ key }) => {
+          const td = document.createElement("td");
+          td.textContent = row[key] ?? "";
+          tr.appendChild(td);
+        });
+
+        DOM.lista.appendChild(tr);
+      });
+    }
+
+    async function fetchTableData(tableName) {
+      const { data, error } = await supabaseClient
+        .from(tableName)
+        .select("*");
+
+      if (error) {
+        throw new Error(error.message || "Falha ao consultar dados.");
+      }
+
+      return data || [];
+    }
+
+    async function renderView(viewName) {
+      const view = views[viewName];
+
+      if (!view) {
+        return;
+      }
+
+      DOM.titulo.textContent = view.title;
+      setMessage(DOM.status, "Carregando dados...");
+
+      try {
+        const data = await fetchTableData(view.table);
+        DOM.total.textContent = String(data.length);
+        renderTable(view.columns, data);
+
+        if (viewName === "dashboard") {
+          setMessage(DOM.status, "Resumo carregado com sucesso.");
+          clearTable();
+          return;
+        }
+
+        setMessage(DOM.status, data.length ? "" : "Nenhum registro encontrado.");
+      } catch (error) {
+        DOM.total.textContent = "0";
+        clearTable();
+        setMessage(DOM.status, error.message, true);
+      }
+    }
+
+    async function fazerLogin(event) {
+      event.preventDefault();
+      setMessage(DOM.erro, "");
+
+      const email = DOM.email.value.trim();
+      const senha = DOM.senha.value;
+
+      if (!email || !senha) {
+        setMessage(DOM.erro, "Informe email e senha.", true);
+        return;
+      }
+
+      DOM.loginButton.disabled = true;
+      DOM.loginButton.textContent = "Entrando...";
+
+      try {
+        const { error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password: senha
+        });
+
+        if (error) {
+          throw new Error("Login invalido.");
+        }
+
+        await verificarUsuario();
+      } catch (error) {
+        setMessage(DOM.erro, error.message, true);
+      } finally {
+        DOM.loginButton.disabled = false;
+        DOM.loginButton.textContent = "Entrar";
+      }
+    }
+
+    async function verificarUsuario() {
+      try {
+        const { data, error } = await supabaseClient.auth.getSession();
+
+        if (error) {
+          throw error;
+        }
+
+        if (data.session) {
+          showLoggedInState();
+          await renderView("dashboard");
+          return;
+        }
+
+        showLoggedOutState();
+      } catch (error) {
+        showLoggedOutState();
+        setMessage(DOM.erro, "Nao foi possivel validar a sessao.", true);
+      }
+    }
+
+    async function logout() {
+      try {
+        await supabaseClient.auth.signOut();
+      } finally {
+        DOM.loginForm.reset();
+        DOM.total.textContent = "0";
+        clearTable();
+        setMessage(DOM.status, "");
+        setMessage(DOM.erro, "");
+        showLoggedOutState();
+      }
+    }
+
+    function bindEvents() {
+      DOM.loginForm.addEventListener("submit", fazerLogin);
+      DOM.logoutButton.addEventListener("click", logout);
+
+      DOM.navButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          renderView(button.dataset.view);
+        });
+      });
+    }
+
+    function validateConfig() {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === "SUA_CHAVE_ANON_AQUI") {
+        setMessage(
+          DOM.erro,
+          "Configure a URL e a chave anon do Supabase no codigo.",
+          true
+        );
+        showLoggedOutState();
+        return false;
+      }
+
+      return true;
+    }
+
+    function init() {
+      bindEvents();
+
+      if (!validateConfig()) {
+        return;
+      }
+
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      verificarUsuario();
+    }
+
+    init();
+  </script>
+</body>
+</html>
