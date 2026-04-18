@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -12,13 +13,29 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-alt: #eef3f8;
+      --sidebar: #2c3e50;
+      --text: #1f2933;
+      --muted: #5b6977;
+      --line: #d9e2ec;
+      --brand: #1f6feb;
+      --brand-soft: #dceaff;
+      --danger: #c0392b;
+      --shadow: 0 16px 40px rgba(31, 41, 51, 0.08);
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       display: flex;
       min-height: 100vh;
-      background: #f4f6f9;
-      color: #1f2933;
+      background:
+        radial-gradient(circle at top right, rgba(31, 111, 235, 0.08), transparent 22%),
+        linear-gradient(180deg, #f7f9fc 0%, var(--bg) 100%);
+      color: var(--text);
     }
 
     .hidden {
@@ -26,37 +43,97 @@
     }
 
     .sidebar {
-      width: 220px;
-      background: #2c3e50;
+      width: 260px;
+      background: linear-gradient(180deg, #263748 0%, var(--sidebar) 100%);
       color: #ffffff;
       min-height: 100vh;
-      padding: 20px;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
     }
 
-    .sidebar h2 {
-      margin-top: 0;
+    .sidebar-top h2 {
+      margin: 0;
+      font-size: 28px;
     }
 
-    .sidebar button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
+    .eyebrow {
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .sidebar .eyebrow,
+    .sidebar-subtitle,
+    .session-info {
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .sidebar-subtitle {
+      margin: 8px 0 0;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .nav-button,
+    .logout-button,
+    .secondary-button,
+    #loginButton {
       border: none;
-      background: #34495e;
-      color: #ffffff;
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
     }
 
-    .sidebar button:hover,
-    .sidebar button:focus-visible {
-      background: #3d566e;
+    .nav-button,
+    .logout-button {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      text-align: left;
+      font-size: 15px;
+    }
+
+    .nav-button:hover,
+    .nav-button:focus-visible,
+    .logout-button:hover,
+    .logout-button:focus-visible,
+    .secondary-button:hover,
+    .secondary-button:focus-visible,
+    #loginButton:hover,
+    #loginButton:focus-visible {
+      transform: translateY(-1px);
       outline: none;
+    }
+
+    .nav-button.active {
+      background: #ffffff;
+      color: var(--sidebar);
+      font-weight: 700;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+    }
+
+    .session-info {
+      min-height: 20px;
+      margin: 0 0 12px;
+      font-size: 13px;
     }
 
     .content {
       flex: 1;
-      padding: 20px;
+      padding: 24px;
       display: flex;
     }
 
@@ -65,13 +142,24 @@
     }
 
     .auth-panel {
-      max-width: 360px;
+      max-width: 420px;
       margin: auto;
-      text-align: center;
-      background: #ffffff;
-      padding: 32px 24px;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+      text-align: left;
+      background: var(--surface);
+      padding: 36px 32px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .auth-panel h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    .auth-copy {
+      margin: 12px 0 24px;
+      color: var(--muted);
+      line-height: 1.5;
     }
 
     .auth-panel form {
@@ -80,37 +168,223 @@
     }
 
     input,
-    .auth-panel button {
+    select,
+    #loginButton {
       width: 100%;
-      padding: 10px;
+      padding: 12px 14px;
       font: inherit;
+      border-radius: 12px;
     }
 
-    .auth-panel button {
-      border: none;
-      background: #2c3e50;
+    input,
+    select {
+      border: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--brand);
+      outline: 3px solid rgba(31, 111, 235, 0.12);
+    }
+
+    #loginButton {
+      background: var(--sidebar);
       color: #ffffff;
-      cursor: pointer;
     }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
+    #loginButton:disabled {
+      opacity: 0.7;
+      cursor: wait;
     }
 
-    .summary {
-      text-align: right;
+    .auth-help {
+      margin-top: 16px;
     }
 
     .message {
       min-height: 20px;
       margin: 8px 0 0;
+      color: var(--muted);
     }
 
     .error {
-      color: #c0392b;
+      color: var(--danger);
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .page-header h1 {
+      margin: 0;
+      font-size: 34px;
+    }
+
+    .view-description {
+      margin: 10px 0 0;
+      color: var(--muted);
+      max-width: 620px;
+      line-height: 1.5;
+    }
+
+    .summary {
+      text-align: right;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(217, 226, 236, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      padding: 16px 18px;
+      box-shadow: 0 10px 24px rgba(31, 41, 51, 0.05);
+    }
+
+    .summary h3 {
+      margin: 0;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid rgba(217, 226, 236, 0.85);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 24px rgba(31, 41, 51, 0.05);
+    }
+
+    .card-label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .card-value {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    .card-detail {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .panel-box {
+      background: var(--surface);
+      border: 1px solid rgba(217, 226, 236, 0.85);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 12px 24px rgba(31, 41, 51, 0.05);
+    }
+
+    .panel-box h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .panel-copy {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .chart-box {
+      position: relative;
+      min-height: 280px;
+    }
+
+    .embed-box {
+      min-height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, var(--surface-alt) 0%, #ffffff 100%);
+    }
+
+    .embed-box iframe {
+      width: 100%;
+      height: 360px;
+      border: 0;
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 360px;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .controls-panel,
+    .table-panel {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(217, 226, 236, 0.9);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 12px 24px rgba(31, 41, 51, 0.05);
+    }
+
+    .controls-panel {
+      margin-bottom: 20px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .secondary-button {
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      white-space: nowrap;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .table-header h2 {
+      margin: 0;
+    }
+
+    .table-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
     }
 
     .table-wrapper {
@@ -121,23 +395,44 @@
       width: 100%;
       border-collapse: collapse;
       background: #ffffff;
-      margin-top: 20px;
     }
 
     th {
-      background: #2c3e50;
+      background: var(--sidebar);
       color: #ffffff;
-      padding: 10px;
+      padding: 12px 10px;
       text-align: left;
+      font-size: 14px;
     }
 
     td {
-      padding: 8px;
-      border-bottom: 1px solid #dddddd;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
     }
 
     tbody tr:hover {
       background: #f8fafc;
+    }
+
+    .empty-table {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px 10px;
+    }
+
+    @media (max-width: 1100px) {
+      .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .controls-grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     @media (max-width: 768px) {
@@ -150,57 +445,143 @@
         min-height: auto;
       }
 
-      .header {
+      .content {
+        padding: 16px;
+      }
+
+      .auth-panel {
+        padding: 28px 20px;
+      }
+
+      .page-header,
+      .table-header {
         flex-direction: column;
+        align-items: flex-start;
       }
 
       .summary {
+        width: 100%;
         text-align: left;
+      }
+
+      .cards-grid,
+      .controls-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
   <aside class="sidebar hidden" id="sidebar" aria-label="Menu principal">
-    <h2>Sistema</h2>
-    <button type="button" data-view="dashboard">Dashboard</button>
-    <button type="button" data-view="relatorio">Processos</button>
-    <button type="button" data-view="liminar">Liminar</button>
-    <button type="button" id="logoutButton">Sair</button>
+    <div class="sidebar-top">
+      <p class="eyebrow">Painel</p>
+      <h2>Sistema</h2>
+      <p class="sidebar-subtitle">Relatorios, liminares e indicadores em um so lugar.</p>
+    </div>
+
+    <nav class="nav-list">
+      <button type="button" class="nav-button active" data-view="dashboard">Dashboard</button>
+      <button type="button" class="nav-button" data-view="relatorio">Processos</button>
+      <button type="button" class="nav-button" data-view="liminar">Liminar</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p id="sessionInfo" class="session-info"></p>
+      <button type="button" id="logoutButton" class="logout-button">Sair</button>
+    </div>
   </aside>
 
   <main class="content">
     <section id="login" class="panel auth-panel">
-      <h2>Login</h2>
+      <p class="eyebrow">Acesso</p>
+      <h1>Entrar no sistema</h1>
+      <p class="auth-copy">Use seu email e senha do Supabase para acessar os paineis.</p>
+
       <form id="loginForm" novalidate>
         <input type="email" id="email" placeholder="Email" autocomplete="email" required>
         <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" required>
         <button type="submit" id="loginButton">Entrar</button>
       </form>
-      <p id="erro" class="message error" role="alert"></p>
+
+      <div class="auth-help">
+        <p id="erro" class="message error" role="alert"></p>
+        <p id="authStatus" class="message"></p>
+      </div>
     </section>
 
     <section id="sistema" class="panel hidden">
-      <div class="header">
-        <h1 id="titulo">Dashboard</h1>
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Visao geral</p>
+          <h1 id="titulo">Dashboard</h1>
+          <p id="viewDescription" class="view-description"></p>
+        </div>
+
         <div class="summary">
-          <h3>Total: <span id="total">0</span></h3>
+          <h3>Total filtrado: <span id="total">0</span></h3>
           <p id="status" class="message"></p>
         </div>
-      </div>
+      </header>
 
-      <div class="table-wrapper">
-        <table>
-          <thead id="thead"></thead>
-          <tbody id="lista"></tbody>
-        </table>
-      </div>
+      <section class="cards-grid" id="cardsGrid"></section>
+
+      <section id="dashboardPanels" class="dashboard-grid"></section>
+
+      <section id="controlsSection" class="controls-panel hidden">
+        <div class="controls-grid">
+          <label class="field">
+            <span>Busca</span>
+            <input type="search" id="searchInput" placeholder="Pesquisar em todos os campos">
+          </label>
+
+          <label class="field">
+            <span>Filtro 1</span>
+            <select id="primaryFilter">
+              <option value="">Todos</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Filtro 2</span>
+            <select id="secondaryFilter">
+              <option value="">Todos</option>
+            </select>
+          </label>
+
+          <button type="button" id="clearFiltersButton" class="secondary-button">Limpar filtros</button>
+        </div>
+      </section>
+
+      <section class="table-panel">
+        <div class="table-header">
+          <h2 id="tableTitle">Dados</h2>
+          <p id="tableMeta" class="table-meta"></p>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead id="thead"></thead>
+            <tbody id="lista"></tbody>
+          </table>
+        </div>
+      </section>
     </section>
   </main>
 
   <script>
-    const SUPABASE_URL = "https://ewibndqllbxfduyzvkpl.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM";
+    const APP_CONFIG = {
+      supabaseUrl: "https://ewibndqllbxfduyzvkpl.supabase.co",
+      supabaseAnonKey: "b_publishable_RlS6dWkf2f8-dFvifnrLxQ_gj-nvmwM",
+      lookerStudioUrl: "<iframe width="600" height="450" src="https://datastudio.google.com/embed/reporting/0df2efad-e234-419c-bfbc-cf4a86ca3a53/page/TcRvF" frameborder="0" style="border:0" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>",
+      appName: "Sistema de Relatorios"
+    };
+
+    const {
+      supabaseUrl,
+      supabaseAnonKey,
+      lookerStudioUrl,
+      appName = "Sistema"
+    } = APP_CONFIG;
 
     const DOM = {
       login: document.getElementById("login"),
@@ -209,26 +590,48 @@
       email: document.getElementById("email"),
       senha: document.getElementById("senha"),
       erro: document.getElementById("erro"),
+      authStatus: document.getElementById("authStatus"),
       status: document.getElementById("status"),
       titulo: document.getElementById("titulo"),
       total: document.getElementById("total"),
+      viewDescription: document.getElementById("viewDescription"),
+      cardsGrid: document.getElementById("cardsGrid"),
+      dashboardPanels: document.getElementById("dashboardPanels"),
+      controlsSection: document.getElementById("controlsSection"),
+      tableTitle: document.getElementById("tableTitle"),
+      tableMeta: document.getElementById("tableMeta"),
+      searchInput: document.getElementById("searchInput"),
+      primaryFilter: document.getElementById("primaryFilter"),
+      secondaryFilter: document.getElementById("secondaryFilter"),
+      clearFiltersButton: document.getElementById("clearFiltersButton"),
       thead: document.getElementById("thead"),
       lista: document.getElementById("lista"),
       loginForm: document.getElementById("loginForm"),
       loginButton: document.getElementById("loginButton"),
       logoutButton: document.getElementById("logoutButton"),
+      sessionInfo: document.getElementById("sessionInfo"),
       navButtons: document.querySelectorAll("[data-view]")
     };
 
     const views = {
       dashboard: {
         title: "Dashboard",
-        table: "Relatorio",
-        columns: []
+        description: "Acompanhe os principais numeros do projeto, os graficos gerais e a area reservada para o Looker Studio.",
+        tableTitle: "Ultimos processos",
+        totalLabel: "registros no dashboard",
+        columns: [
+          { key: "DATA", label: "Data" },
+          { key: "PROCESSO", label: "Processo" },
+          { key: "DIRETORIA", label: "Diretoria" },
+          { key: "LOCAL", label: "Local" }
+        ]
       },
       relatorio: {
         title: "Processos",
-        table: "Relatorio",
+        description: "Visualize os dados da planilha de relatorios, explore os graficos e use busca e filtros para localizar processos.",
+        tableTitle: "Tabela de processos",
+        totalLabel: "processos filtrados",
+        dataKey: "relatorio",
         columns: [
           { key: "DATA", label: "Data" },
           { key: "ANO", label: "Ano" },
@@ -237,19 +640,40 @@
           { key: "OBJETO DA ACAO", label: "Objeto" },
           { key: "VALOR DA CAUSA", label: "Valor" },
           { key: "DIRETORIA", label: "Diretoria" }
+        ],
+        filterFields: [
+          { key: "DIRETORIA", label: "Diretoria" },
+          { key: "ANO", label: "Ano" }
         ]
       },
       liminar: {
         title: "Liminar",
-        table: "Liminar",
+        description: "Acompanhe os dados da planilha de liminar com contadores, graficos por setor e filtros para analise rapida.",
+        tableTitle: "Tabela de liminares",
+        totalLabel: "liminares filtradas",
+        dataKey: "liminar",
         columns: [
           { key: "PROCESSO", label: "Processo" },
           { key: "LIMINAR", label: "Liminar" },
           { key: "SEI", label: "SEI" },
           { key: "SETOR", label: "Setor" },
           { key: "MES", label: "Mes" }
+        ],
+        filterFields: [
+          { key: "SETOR", label: "Setor" },
+          { key: "MES", label: "Mes" }
         ]
       }
+    };
+
+    const state = {
+      currentView: "dashboard",
+      session: null,
+      data: {
+        relatorio: [],
+        liminar: []
+      },
+      charts: {}
     };
 
     let supabaseClient = null;
@@ -257,6 +681,91 @@
     function setMessage(element, message, isError = false) {
       element.textContent = message;
       element.classList.toggle("error", isError);
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(Number(value) || 0);
+    }
+
+    function formatCurrency(value) {
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      }).format(Number(value) || 0);
+    }
+
+    function normalizeText(value) {
+      return String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function parseNumericValue(value) {
+      if (typeof value === "number") return value;
+      if (!value) return 0;
+
+      const raw = String(value).trim();
+      if (!raw) return 0;
+
+      const sanitized = raw.replace(/[^\d,.-]/g, "");
+      const hasComma = sanitized.includes(",");
+      const hasDot = sanitized.includes(".");
+
+      if (hasComma && hasDot && sanitized.lastIndexOf(",") > sanitized.lastIndexOf(".")) {
+        return Number(sanitized.replace(/\./g, "").replace(",", ".")) || 0;
+      }
+
+      if (hasComma && !hasDot) {
+        return Number(sanitized.replace(",", ".")) || 0;
+      }
+
+      return Number(sanitized) || 0;
+    }
+
+    function getUniqueValues(rows, key) {
+      const values = rows
+        .map((row) => row[key])
+        .filter((value) => value !== null && value !== undefined && String(value).trim() !== "")
+        .map((value) => String(value).trim());
+
+      return [...new Set(values)];
+    }
+
+    function getTruthyCount(rows, key) {
+      return rows.filter((row) => String(row[key] ?? "").trim() !== "").length;
+    }
+
+    function getTopGroups(rows, key, limit = 6) {
+      const counts = new Map();
+
+      rows.forEach((row) => {
+        const label = String(row[key] ?? "Nao informado").trim() || "Nao informado";
+        counts.set(label, (counts.get(label) || 0) + 1);
+      });
+
+      return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+    }
+
+    function buildMonthlyDistribution(rows, key) {
+      const counts = new Map();
+
+      rows.forEach((row) => {
+        const label = String(row[key] ?? "Nao informado").trim() || "Nao informado";
+        counts.set(label, (counts.get(label) || 0) + 1);
+      });
+
+      return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
+    }
+
+    function updateSessionInfo() {
+      if (!state.session?.user) {
+        DOM.sessionInfo.textContent = "";
+        return;
+      }
+
+      DOM.sessionInfo.textContent = `Conectado como ${state.session.user.email || "usuario"}`;
     }
 
     function showLoggedOutState() {
@@ -276,22 +785,31 @@
       DOM.lista.replaceChildren();
     }
 
+    function renderEmptyTable(message, columnCount = 1) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = columnCount;
+      td.className = "empty-table";
+      td.textContent = message;
+      tr.appendChild(td);
+      DOM.lista.appendChild(tr);
+    }
+
     function renderTable(columns, rows) {
       clearTable();
 
-      if (!columns.length) {
-        return;
-      }
-
       const headerRow = document.createElement("tr");
-
       columns.forEach(({ label }) => {
         const th = document.createElement("th");
         th.textContent = label;
         headerRow.appendChild(th);
       });
-
       DOM.thead.appendChild(headerRow);
+
+      if (!rows.length) {
+        renderEmptyTable("Nenhum registro encontrado para os filtros aplicados.", columns.length);
+        return;
+      }
 
       rows.forEach((row) => {
         const tr = document.createElement("tr");
@@ -306,50 +824,560 @@
       });
     }
 
+    function renderCards(cards) {
+      DOM.cardsGrid.replaceChildren();
+
+      cards.forEach((card) => {
+        const article = document.createElement("article");
+        article.className = "card";
+
+        const label = document.createElement("p");
+        label.className = "card-label";
+        label.textContent = card.label;
+
+        const value = document.createElement("p");
+        value.className = "card-value";
+        value.textContent = card.value;
+
+        const detail = document.createElement("p");
+        detail.className = "card-detail";
+        detail.textContent = card.detail;
+
+        article.append(label, value, detail);
+        DOM.cardsGrid.appendChild(article);
+      });
+    }
+
+    function destroyCharts() {
+      Object.values(state.charts).forEach((chart) => chart.destroy());
+      state.charts = {};
+    }
+
+    function createPanelBox(title, copy) {
+      const panel = document.createElement("article");
+      panel.className = "panel-box";
+
+      const heading = document.createElement("h2");
+      heading.textContent = title;
+
+      const paragraph = document.createElement("p");
+      paragraph.className = "panel-copy";
+      paragraph.textContent = copy;
+
+      panel.append(heading, paragraph);
+      return panel;
+    }
+
+    function renderChartPanel(target, chartId, title, copy) {
+      const panel = createPanelBox(title, copy);
+      const chartBox = document.createElement("div");
+      chartBox.className = "chart-box";
+
+      const canvas = document.createElement("canvas");
+      canvas.id = chartId;
+
+      chartBox.appendChild(canvas);
+      panel.appendChild(chartBox);
+      target.appendChild(panel);
+
+      return canvas;
+    }
+
+    function createChart(canvas, type, labels, data, label) {
+      return new Chart(canvas, {
+        type,
+        data: {
+          labels,
+          datasets: [
+            {
+              label,
+              data,
+              backgroundColor: [
+                "#1f6feb",
+                "#f39c12",
+                "#16a085",
+                "#8e44ad",
+                "#d35400",
+                "#2c3e50"
+              ],
+              borderColor: "#1f2933",
+              borderWidth: type === "line" ? 2 : 0,
+              tension: 0.25
+            }
+          ]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: type === "doughnut"
+            }
+          },
+          scales: type === "doughnut" ? {} : {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderLookerPanel() {
+      const panel = createPanelBox(
+        "Looker Studio",
+        "Area reservada para seus relatorios externos. Basta colar o link publico do painel na configuracao."
+      );
+
+      const embed = document.createElement("div");
+      embed.className = "embed-box";
+
+      if (lookerStudioUrl) {
+        const iframe = document.createElement("iframe");
+        iframe.src = lookerStudioUrl;
+        iframe.loading = "lazy";
+        iframe.referrerPolicy = "strict-origin-when-cross-origin";
+        iframe.title = "Painel do Looker Studio";
+        embed.appendChild(iframe);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "Cole o link publico do Looker Studio em lookerStudioUrl para exibir o painel aqui.";
+        embed.appendChild(empty);
+      }
+
+      panel.appendChild(embed);
+      DOM.dashboardPanels.appendChild(panel);
+    }
+
+    function setActiveNav(viewName) {
+      DOM.navButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.view === viewName);
+      });
+    }
+
+    function setFilterOptions(select, label, values) {
+      select.replaceChildren();
+
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Todos";
+      select.appendChild(defaultOption);
+
+      values.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+
+      select.setAttribute("aria-label", label);
+    }
+
+    function resetFilters() {
+      DOM.searchInput.value = "";
+      DOM.primaryFilter.value = "";
+      DOM.secondaryFilter.value = "";
+    }
+
+    function populateFilters(view, rows) {
+      if (!view.filterFields) {
+        setFilterOptions(DOM.primaryFilter, "Filtro 1", []);
+        setFilterOptions(DOM.secondaryFilter, "Filtro 2", []);
+        return;
+      }
+
+      const [primaryField, secondaryField] = view.filterFields;
+
+      setFilterOptions(
+        DOM.primaryFilter,
+        primaryField.label,
+        getUniqueValues(rows, primaryField.key).sort((a, b) => a.localeCompare(b, "pt-BR"))
+      );
+
+      setFilterOptions(
+        DOM.secondaryFilter,
+        secondaryField.label,
+        getUniqueValues(rows, secondaryField.key).sort((a, b) => a.localeCompare(b, "pt-BR"))
+      );
+    }
+
+    function applyFilters(rows, view) {
+      if (!view.dataKey) {
+        return rows;
+      }
+
+      const search = normalizeText(DOM.searchInput.value);
+      const primaryValue = DOM.primaryFilter.value;
+      const secondaryValue = DOM.secondaryFilter.value;
+      const [primaryField, secondaryField] = view.filterFields;
+
+      return rows.filter((row) => {
+        const matchesSearch = !search || Object.values(row).some((value) => normalizeText(value).includes(search));
+        const matchesPrimary = !primaryValue || String(row[primaryField.key] ?? "") === primaryValue;
+        const matchesSecondary = !secondaryValue || String(row[secondaryField.key] ?? "") === secondaryValue;
+        return matchesSearch && matchesPrimary && matchesSecondary;
+      });
+    }
+
+    function getDashboardCards() {
+      const relatorio = state.data.relatorio;
+      const liminar = state.data.liminar;
+      const totalValor = relatorio.reduce((sum, row) => sum + parseNumericValue(row["VALOR DA CAUSA"]), 0);
+
+      return [
+        {
+          label: "Processos",
+          value: formatNumber(relatorio.length),
+          detail: "Total de linhas na tabela Relatorio."
+        },
+        {
+          label: "Liminares",
+          value: formatNumber(liminar.length),
+          detail: "Total de linhas na tabela Liminar."
+        },
+        {
+          label: "Valor da causa",
+          value: formatCurrency(totalValor),
+          detail: "Soma aproximada do campo VALOR DA CAUSA."
+        },
+        {
+          label: "Diretorias ativas",
+          value: formatNumber(getUniqueValues(relatorio, "DIRETORIA").length),
+          detail: "Quantidade de diretorias com registros."
+        }
+      ];
+    }
+
+    function getRelatorioCards(rows) {
+      const totalValor = rows.reduce((sum, row) => sum + parseNumericValue(row["VALOR DA CAUSA"]), 0);
+
+      return [
+        {
+          label: "Processos filtrados",
+          value: formatNumber(rows.length),
+          detail: "Resultado apos busca e filtros."
+        },
+        {
+          label: "Valor filtrado",
+          value: formatCurrency(totalValor),
+          detail: "Soma dos valores visiveis na tabela."
+        },
+        {
+          label: "Diretorias",
+          value: formatNumber(getUniqueValues(rows, "DIRETORIA").length),
+          detail: "Diretorias presentes no resultado."
+        },
+        {
+          label: "Locais",
+          value: formatNumber(getUniqueValues(rows, "LOCAL").length),
+          detail: "Locais distintos encontrados."
+        }
+      ];
+    }
+
+    function getLiminarCards(rows) {
+      return [
+        {
+          label: "Liminares filtradas",
+          value: formatNumber(rows.length),
+          detail: "Resultado apos busca e filtros."
+        },
+        {
+          label: "Setores",
+          value: formatNumber(getUniqueValues(rows, "SETOR").length),
+          detail: "Setores com ocorrencias no resultado."
+        },
+        {
+          label: "Meses",
+          value: formatNumber(getUniqueValues(rows, "MES").length),
+          detail: "Meses representados na tabela."
+        },
+        {
+          label: "Campo liminar preenchido",
+          value: formatNumber(getTruthyCount(rows, "LIMINAR")),
+          detail: "Quantidade de registros com informacao em LIMINAR."
+        }
+      ];
+    }
+
+    function renderDashboardPanels() {
+      destroyCharts();
+      DOM.dashboardPanels.replaceChildren();
+
+      const relatorioByDiretoria = getTopGroups(state.data.relatorio, "DIRETORIA");
+      const relatorioByAno = getTopGroups(state.data.relatorio, "ANO");
+      const liminarBySetor = getTopGroups(state.data.liminar, "SETOR");
+
+      const diretoriaCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartDashboardDiretoria",
+        "Processos por diretoria",
+        "As diretorias com maior volume de registros na tabela Relatorio."
+      );
+      state.charts.dashboardDiretoria = createChart(
+        diretoriaCanvas,
+        "bar",
+        relatorioByDiretoria.map((item) => item[0]),
+        relatorioByDiretoria.map((item) => item[1]),
+        "Processos"
+      );
+
+      const anoCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartDashboardAno",
+        "Processos por ano",
+        "Distribuicao dos registros por ano da base de relatorios."
+      );
+      state.charts.dashboardAno = createChart(
+        anoCanvas,
+        "line",
+        relatorioByAno.map((item) => item[0]),
+        relatorioByAno.map((item) => item[1]),
+        "Registros"
+      );
+
+      const setorCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartDashboardSetor",
+        "Liminares por setor",
+        "Resumo dos setores com mais ocorrencias na base de liminar."
+      );
+      state.charts.dashboardSetor = createChart(
+        setorCanvas,
+        "doughnut",
+        liminarBySetor.map((item) => item[0]),
+        liminarBySetor.map((item) => item[1]),
+        "Liminares"
+      );
+
+      renderLookerPanel();
+    }
+
+    function renderRelatorioPanels(rows) {
+      destroyCharts();
+      DOM.dashboardPanels.replaceChildren();
+
+      const diretoria = getTopGroups(rows, "DIRETORIA");
+      const ano = getTopGroups(rows, "ANO");
+      const local = getTopGroups(rows, "LOCAL");
+
+      const diretoriaCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartRelatorioDiretoria",
+        "Diretorias com mais processos",
+        "Visao rapida das diretorias com maior volume na consulta atual."
+      );
+      state.charts.relatorioDiretoria = createChart(
+        diretoriaCanvas,
+        "bar",
+        diretoria.map((item) => item[0]),
+        diretoria.map((item) => item[1]),
+        "Processos"
+      );
+
+      const anoCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartRelatorioAno",
+        "Distribuicao por ano",
+        "Entenda como os registros se distribuem por ano."
+      );
+      state.charts.relatorioAno = createChart(
+        anoCanvas,
+        "line",
+        ano.map((item) => item[0]),
+        ano.map((item) => item[1]),
+        "Registros"
+      );
+
+      const localCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartRelatorioLocal",
+        "Locais com mais processos",
+        "Principais locais presentes nos dados filtrados."
+      );
+      state.charts.relatorioLocal = createChart(
+        localCanvas,
+        "doughnut",
+        local.map((item) => item[0]),
+        local.map((item) => item[1]),
+        "Locais"
+      );
+    }
+
+    function renderLiminarPanels(rows) {
+      destroyCharts();
+      DOM.dashboardPanels.replaceChildren();
+
+      const setor = getTopGroups(rows, "SETOR");
+      const mes = buildMonthlyDistribution(rows, "MES");
+      const status = getTopGroups(rows, "LIMINAR");
+
+      const setorCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartLiminarSetor",
+        "Liminares por setor",
+        "Veja quais setores concentram mais registros de liminar."
+      );
+      state.charts.liminarSetor = createChart(
+        setorCanvas,
+        "bar",
+        setor.map((item) => item[0]),
+        setor.map((item) => item[1]),
+        "Liminares"
+      );
+
+      const mesCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartLiminarMes",
+        "Distribuicao por mes",
+        "Quantidade de registros agrupados pelo campo MES."
+      );
+      state.charts.liminarMes = createChart(
+        mesCanvas,
+        "line",
+        mes.map((item) => item[0]),
+        mes.map((item) => item[1]),
+        "Registros"
+      );
+
+      const statusCanvas = renderChartPanel(
+        DOM.dashboardPanels,
+        "chartLiminarStatus",
+        "Situacao do campo liminar",
+        "Resumo dos valores mais frequentes encontrados no campo LIMINAR."
+      );
+      state.charts.liminarStatus = createChart(
+        statusCanvas,
+        "doughnut",
+        status.map((item) => item[0]),
+        status.map((item) => item[1]),
+        "Status"
+      );
+    }
+
+    function getDashboardRows() {
+      return [...state.data.relatorio].slice(0, 8);
+    }
+
+    function updateMeta(totalRows, filteredRows, label) {
+      DOM.total.textContent = formatNumber(filteredRows);
+      DOM.tableMeta.textContent = `${formatNumber(filteredRows)} de ${formatNumber(totalRows)} ${label}`;
+    }
+
+    function renderDashboardView() {
+      const view = views.dashboard;
+      const rows = getDashboardRows();
+
+      DOM.controlsSection.classList.add("hidden");
+      DOM.viewDescription.textContent = view.description;
+      DOM.tableTitle.textContent = view.tableTitle;
+
+      renderCards(getDashboardCards());
+      renderDashboardPanels();
+      renderTable(view.columns, rows);
+      updateMeta(state.data.relatorio.length, rows.length, view.totalLabel);
+      setMessage(DOM.status, "Dashboard atualizado com os dados mais recentes carregados.");
+    }
+
+    function renderDataView(viewName) {
+      const view = views[viewName];
+      const rows = state.data[view.dataKey];
+      const filteredRows = applyFilters(rows, view);
+
+      DOM.controlsSection.classList.remove("hidden");
+      DOM.viewDescription.textContent = view.description;
+      DOM.tableTitle.textContent = view.tableTitle;
+
+      if (viewName === "relatorio") {
+        renderCards(getRelatorioCards(filteredRows));
+        renderRelatorioPanels(filteredRows);
+      } else {
+        renderCards(getLiminarCards(filteredRows));
+        renderLiminarPanels(filteredRows);
+      }
+
+      renderTable(view.columns, filteredRows);
+      updateMeta(rows.length, filteredRows.length, view.totalLabel);
+      setMessage(
+        DOM.status,
+        filteredRows.length ? "Dados carregados e filtros aplicados com sucesso." : "Nenhum registro corresponde aos filtros informados."
+      );
+    }
+
     async function fetchTableData(tableName) {
-      const { data, error } = await supabaseClient
-        .from(tableName)
-        .select("*");
+      const { data, error } = await supabaseClient.from(tableName).select("*");
 
       if (error) {
-        throw new Error(error.message || "Falha ao consultar dados.");
+        throw new Error(error.message || `Falha ao consultar ${tableName}.`);
       }
 
       return data || [];
     }
 
-    async function renderView(viewName) {
-      const view = views[viewName];
+    async function loadAllData() {
+      setMessage(DOM.status, "Carregando dados do Supabase...");
 
-      if (!view) {
+      const [relatorio, liminar] = await Promise.all([
+        fetchTableData("Relatorio"),
+        fetchTableData("Liminar")
+      ]);
+
+      state.data.relatorio = relatorio;
+      state.data.liminar = liminar;
+    }
+
+    function prepareFiltersForCurrentView() {
+      const view = views[state.currentView];
+
+      if (!view.dataKey) {
+        resetFilters();
+        populateFilters(view, []);
         return;
       }
 
-      DOM.titulo.textContent = view.title;
-      setMessage(DOM.status, "Carregando dados...");
+      populateFilters(view, state.data[view.dataKey]);
+    }
 
-      try {
-        const data = await fetchTableData(view.table);
-        DOM.total.textContent = String(data.length);
-        renderTable(view.columns, data);
+    function renderCurrentView() {
+      DOM.titulo.textContent = views[state.currentView].title;
+      setActiveNav(state.currentView);
 
-        if (viewName === "dashboard") {
-          setMessage(DOM.status, "Resumo carregado com sucesso.");
-          clearTable();
-          return;
-        }
-
-        setMessage(DOM.status, data.length ? "" : "Nenhum registro encontrado.");
-      } catch (error) {
-        DOM.total.textContent = "0";
-        clearTable();
-        setMessage(DOM.status, error.message, true);
+      if (state.currentView === "dashboard") {
+        renderDashboardView();
+        return;
       }
+
+      renderDataView(state.currentView);
+    }
+
+    function handleViewChange(viewName) {
+      state.currentView = viewName;
+      resetFilters();
+      prepareFiltersForCurrentView();
+      renderCurrentView();
+    }
+
+    function mapAuthError(error) {
+      const message = error?.message || "";
+
+      if (message.includes("Invalid login credentials")) {
+        return "Email ou senha invalidos.";
+      }
+
+      if (message.includes("Email not confirmed")) {
+        return "Confirme seu email antes de entrar.";
+      }
+
+      return message || "Nao foi possivel fazer login.";
     }
 
     async function fazerLogin(event) {
       event.preventDefault();
       setMessage(DOM.erro, "");
+      setMessage(DOM.authStatus, "");
 
       const email = DOM.email.value.trim();
       const senha = DOM.senha.value;
@@ -361,6 +1389,7 @@
 
       DOM.loginButton.disabled = true;
       DOM.loginButton.textContent = "Entrando...";
+      setMessage(DOM.authStatus, "Validando credenciais...");
 
       try {
         const { error } = await supabaseClient.auth.signInWithPassword({
@@ -369,70 +1398,106 @@
         });
 
         if (error) {
-          throw new Error("Login invalido.");
+          throw error;
         }
-
-        await verificarUsuario();
       } catch (error) {
-        setMessage(DOM.erro, error.message, true);
+        setMessage(DOM.erro, mapAuthError(error), true);
+        setMessage(DOM.authStatus, "");
       } finally {
         DOM.loginButton.disabled = false;
         DOM.loginButton.textContent = "Entrar";
       }
     }
 
-    async function verificarUsuario() {
+    async function handleAuthenticated(session) {
+      state.session = session;
+      updateSessionInfo();
+      showLoggedInState();
+      setMessage(DOM.erro, "");
+      setMessage(DOM.authStatus, `${appName} pronto para uso.`);
+
       try {
-        const { data, error } = await supabaseClient.auth.getSession();
-
-        if (error) {
-          throw error;
-        }
-
-        if (data.session) {
-          showLoggedInState();
-          await renderView("dashboard");
-          return;
-        }
-
-        showLoggedOutState();
+        await loadAllData();
+        prepareFiltersForCurrentView();
+        renderCurrentView();
       } catch (error) {
-        showLoggedOutState();
-        setMessage(DOM.erro, "Nao foi possivel validar a sessao.", true);
+        setMessage(DOM.status, error.message, true);
       }
     }
 
-    async function logout() {
-      try {
-        await supabaseClient.auth.signOut();
-      } finally {
-        DOM.loginForm.reset();
-        DOM.total.textContent = "0";
-        clearTable();
-        setMessage(DOM.status, "");
-        setMessage(DOM.erro, "");
-        showLoggedOutState();
+    function handleLoggedOut() {
+      state.session = null;
+      updateSessionInfo();
+      showLoggedOutState();
+      destroyCharts();
+      DOM.dashboardPanels.replaceChildren();
+      DOM.cardsGrid.replaceChildren();
+      DOM.loginForm.reset();
+      DOM.total.textContent = "0";
+      DOM.viewDescription.textContent = "";
+      DOM.tableTitle.textContent = "Dados";
+      DOM.tableMeta.textContent = "";
+      clearTable();
+      resetFilters();
+      setMessage(DOM.status, "");
+      setMessage(DOM.authStatus, "Sessao encerrada.");
+    }
+
+    async function verificarUsuario() {
+      const { data, error } = await supabaseClient.auth.getSession();
+
+      if (error) {
+        throw error;
       }
+
+      if (data.session) {
+        await handleAuthenticated(data.session);
+        return;
+      }
+
+      handleLoggedOut();
+    }
+
+    async function logout() {
+      setMessage(DOM.status, "Encerrando sessao...");
+      await supabaseClient.auth.signOut();
     }
 
     function bindEvents() {
       DOM.loginForm.addEventListener("submit", fazerLogin);
       DOM.logoutButton.addEventListener("click", logout);
+      DOM.searchInput.addEventListener("input", () => renderCurrentView());
+      DOM.primaryFilter.addEventListener("change", () => renderCurrentView());
+      DOM.secondaryFilter.addEventListener("change", () => renderCurrentView());
+      DOM.clearFiltersButton.addEventListener("click", () => {
+        resetFilters();
+        renderCurrentView();
+      });
 
       DOM.navButtons.forEach((button) => {
         button.addEventListener("click", () => {
-          renderView(button.dataset.view);
+          handleViewChange(button.dataset.view);
         });
       });
     }
 
+    function bindAuthSubscription() {
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        if (event === "SIGNED_OUT") {
+          handleLoggedOut();
+          return;
+        }
+
+        if (session && ["SIGNED_IN", "TOKEN_REFRESHED", "USER_UPDATED"].includes(event)) {
+          await handleAuthenticated(session);
+        }
+      });
+    }
+
     function validateConfig() {
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === "SUA_CHAVE_ANON_AQUI") {
-        setMessage(
-          DOM.erro,
-          "Configure a URL e a chave anon do Supabase no codigo.",
-          true
-        );
+      if (!supabaseUrl || !supabaseAnonKey || supabaseAnonKey === "SUA_CHAVE_ANON_AQUI") {
+        setMessage(DOM.erro, "Configure a URL e a chave anon do Supabase no codigo.", true);
+        setMessage(DOM.authStatus, "Aguardando configuracao.");
         showLoggedOutState();
         return false;
       }
@@ -440,15 +1505,33 @@
       return true;
     }
 
-    function init() {
+    function initClient() {
+      supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
+    }
+
+    async function init() {
       bindEvents();
 
       if (!validateConfig()) {
         return;
       }
 
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      verificarUsuario();
+      initClient();
+      bindAuthSubscription();
+
+      try {
+        await verificarUsuario();
+      } catch (error) {
+        showLoggedOutState();
+        setMessage(DOM.erro, "Nao foi possivel validar a sessao.", true);
+        setMessage(DOM.authStatus, "");
+      }
     }
 
     init();
